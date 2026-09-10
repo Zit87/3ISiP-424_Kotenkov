@@ -10,11 +10,116 @@ namespace _3ISiP_424_Kotenkov
     internal class Program
     {
 
+         static void statistica(ref Dictionary<string, double> oper)
+        {
+            double summa = oper.Values.Sum();
+            double srednee = oper.Values.Average();
+            double maksimum = oper.Values.Max();
+            double minimum = oper.Values.Min();
+
+            Console.WriteLine($"Сумма: {summa}");
+            Console.WriteLine($"Среднее: {srednee}");
+            Console.WriteLine($"Максимум: {maksimum}");
+            Console.WriteLine($"Минимум: {minimum}");
+
+           
+        }
+
+        static void vivod(ref Dictionary<string, double> oper)
+        {
+            foreach (var d in oper)
+            {
+                Console.WriteLine($"(Название услуги или товара : {d.Key} Количество денег: {d.Value})");
+            }
+        }
+
+        static void sort(ref Dictionary<string, double> oper)
+        {
+            var sort = oper.ToList();
+
+            for (int i = 0; i < sort.Count - 1; i++)
+            {
+                for (int j = 0; j < sort.Count - i - 1; j++)
+                {
+                    if (sort[j].Value > sort[j + 1].Value)
+                    {
+                        var temp = sort[j];
+                        sort[j] = sort[j + 1];
+                        sort[j + 1] = temp;
+                    }
+                }
+            }
+            Console.WriteLine("Сортировкапо цене:");
+            foreach (var d in sort)
+            {
+                Console.WriteLine($"(Название услуги или товара : {d.Key} Количество денег: {d.Value})");
+            }
+
+        }
+        static void konvert(ref Dictionary<string, double> oper)
+        {
+            Console.WriteLine("Выберите валлюту:");
+            Console.WriteLine("1. Доллары");
+            Console.WriteLine("2. Евро");
+            Console.WriteLine("3. Ввести свой курс");
+            int valuta = Convert.ToInt32(Console.ReadLine());
+            double kurs = 0;
+            switch (valuta)
+            {
+                case 1:
+                    kurs = 80;
+                    break;
+                case 2:
+                    kurs = 95;
+                    break;
+                case 3:
+                    Console.WriteLine("Введите курс рубля к валюте:");
+                    kurs = Convert.ToDouble(Console.ReadLine());
+                    break;
+
+                default:
+                    Console.WriteLine("Неверный выбор валюты");
+                    break;
+
+
+            }
+            if (kurs > 0)
+            {
+                Console.WriteLine("Конвертированные значения:");
+                foreach (var d in oper)
+                {
+                    double konvert = d.Value / kurs;
+                    Console.WriteLine($"(Название услуги или товара : {d.Key} Количество денег: {konvert})");
+                }
+            }
+
+
+        }
+
+        static void poisk(ref Dictionary<string, double> oper)
+        {
+            Console.WriteLine("Введите название услуги или товара для поиска:");
+            string poisk = Console.ReadLine();
+            bool naydeno = false;
+
+            foreach (var d in oper)
+            {
+                if (d.Key.ToLower().Contains(poisk.ToLower()))
+                {
+                    Console.WriteLine($"(Название услуги или товара : {d.Key} Количество денег: {d.Value})");
+                    naydeno = true;
+                }
+            }
+            if (!naydeno)
+            {
+                Console.WriteLine("Услуга или товар не найден");
+            }
+        }
         static void operac()
         {
             Dictionary<string, double> oper = new Dictionary<string, double>();
             
-                Console.WriteLine("Введите кол-во операций:");
+                Console.WriteLine("Введите кол-во операций( от 2 до 40):");
                 int a = Convert.ToInt32(Console.ReadLine());
             if (a < 2 || a > 40)
             {
@@ -44,99 +149,21 @@ namespace _3ISiP_424_Kotenkov
                 switch (g)
                 {
                     case 1:
-                        foreach (var d in oper)
-                        {
-                            Console.WriteLine($"(Название услуги или товара : {d.Key} Количество денег: {d.Value})");
-                        }
+                        vivod(ref oper);
                         break;
                     case 2:
-                        double summa = oper.Values.Sum();
-                        double srednee = oper.Values.Average();
-                        double maksimum = oper.Values.Max();
-                        double minimum = oper.Values.Min();
-
-                        Console.WriteLine($"Сумма: {summa}");
-                        Console.WriteLine($"Среднее: {srednee}");
-                        Console.WriteLine($"Максимум: {maksimum}");
-                        Console.WriteLine($"Минимум: {minimum}");
+                        statistica(ref oper);
 
                         break;
                     case 3:
-                        var sort = oper.ToList();
-
-                        for (int i = 0; i < sort.Count - 1; i++)
-                        {
-                            for (int j = 0; j < sort.Count - i - 1; j++)
-                            {
-                                if (sort[j].Value > sort[j + 1].Value)
-                                {
-                                    var temp = sort[j];
-                                    sort[j] = sort[j + 1];
-                                    sort[j + 1] = temp;
-                                }
-                            }
-                        }
-                        Console.WriteLine("Сортировкапо цене:");
-                        foreach (var d in sort)
-                        {
-                            Console.WriteLine($"(Название услуги или товара : {d.Key} Количество денег: {d.Value})");
-                        }
-
+                       sort(ref  oper);
 
                         break;
                     case 4:
-                        Console.WriteLine("Выберите валлюту:");
-                        Console.WriteLine("1. Доллары");
-                        Console.WriteLine("2. Евро");
-                        Console.WriteLine("3. Ввести свой курс");
-                        int valuta = Convert.ToInt32(Console.ReadLine());
-                        double kurs = 0;
-                        switch (valuta)
-                        {
-                            case 1:
-                                kurs = 80;
-                                break;
-                            case 2:
-                                kurs = 95;
-                                break;
-                            case 3:
-                                Console.WriteLine("Введите курс рубля к валюте:");
-                                kurs = Convert.ToDouble(Console.ReadLine());
-                                break;
-
-                            default:
-                                Console.WriteLine("Неверный выбор валюты");
-                                break;
-
-
-                        }
-                        if (kurs > 0)
-                        {
-                            Console.WriteLine("Конвертированные значения:");
-                            foreach (var d in oper)
-                            {
-                                double konvert = d.Value / kurs;
-                                Console.WriteLine($"(Название услуги или товара : {d.Key} Количество денег: {konvert})");
-                            }
-                        }
+                        konvert(ref oper);
                         break;
                     case 5:
-                        Console.WriteLine("Введите название услуги или товара для поиска:");
-                        string poisk = Console.ReadLine();
-                        bool naydeno = false;
-
-                        foreach (var d in oper)
-                        {
-                            if (d.Key.ToLower().Contains(poisk.ToLower()))
-                            {
-                                Console.WriteLine($"(Название услуги или товара : {d.Key} Количество денег: {d.Value})");
-                                naydeno = true;
-                            }
-                        }
-                        if (!naydeno)
-                        {
-                            Console.WriteLine("Услуга или товар не найден");
-                        }
+                        poisk(ref oper);
                         break;
                     case 0:
                         Console.WriteLine("Выход из программы");
