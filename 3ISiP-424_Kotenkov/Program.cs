@@ -19,7 +19,8 @@ namespace _3ISiP_424_Kotenkov
 
     class Tovar
     {
-        public static int ID = 0;
+        private static int nextID = 0;
+        public  int ID ;
         public string Name { get; set; }
 
         public double Price { get; set; }
@@ -35,11 +36,12 @@ namespace _3ISiP_424_Kotenkov
 
         public Tovar(string Name, double Price, int Kolvo, Kategorii Kat )
         {
-            ID++;
+            ID = ++nextID;
             this.Name = Name;
             this.Price = Price;
             this.Kolvo = Kolvo;
-            if(Kolvo >= 1 )
+            this.Kat = Kat;
+            if (Kolvo >= 1 )
             {
                 Nasklade = "Есть";
             }
@@ -97,6 +99,7 @@ namespace _3ISiP_424_Kotenkov
             Console.WriteLine("3. Концелярия");
             int b = Convert.ToInt32(Console.ReadLine());
 
+            
             switch (b)
             {
                 case 1:
@@ -119,7 +122,156 @@ namespace _3ISiP_424_Kotenkov
 
         }
 
-        
+
+        public void ydal()
+        {
+            Console.WriteLine("Введите какой товар хотите удалить:");
+            foreach (Tovar tovar1 in tovar)
+            {
+                tovar1.PrintInfo();
+            }
+            int n = Convert.ToInt32(Console.ReadLine());
+            tovar.RemoveAt(n - 1);
+            Console.WriteLine("Удалено!");
+            foreach (Tovar tovar1 in tovar)
+            {
+                tovar1.PrintInfo();
+            }
+        }
+
+        public void post()
+        {
+            Console.WriteLine("Введите куда хотите поставить товар:");
+            foreach (Tovar tovar1 in tovar)
+            {
+                tovar1.PrintInfo();
+            }
+            int n = Convert.ToInt32(Console.ReadLine());
+            Console.WriteLine("Введите сколько поставить:");
+            int m = Convert.ToInt32(Console.ReadLine());
+            tovar[n - 1].Kolvo += m;
+
+            foreach (Tovar tovar1 in tovar)
+            {
+                tovar1.PrintInfo();
+            }
+        }
+
+        public void prod()
+        {
+            Console.WriteLine("Введите что хотите продать:");
+            foreach (Tovar tovar1 in tovar)
+            {
+                tovar1.PrintInfo();
+            }
+            int n = Convert.ToInt32(Console.ReadLine());
+            Console.WriteLine("Введите сколько продать:");
+            int m = Convert.ToInt32(Console.ReadLine());
+            if (tovar[n - 1].Kolvo >= m)
+            {
+                Console.WriteLine("Товар продан");
+                tovar[n - 1].Kolvo -= m;
+
+            }
+            else
+            {
+                Console.WriteLine("Недостаточно товара на складе!");
+            }
+
+            foreach (Tovar tovar1 in tovar)
+            {
+                tovar1.PrintInfo();
+            }
+        }
+
+        public void poisk()
+        {
+            Console.WriteLine("Выберите по чему искать:");
+            Console.WriteLine("1. По названию");
+            Console.WriteLine("2. По категории");
+            Console.WriteLine("3. По Id");
+            int choice = Convert.ToInt32(Console.ReadLine());
+            switch (choice)
+            {
+                case 1:
+                    Console.WriteLine("Введите название товара для поиска:");
+                    string name = Console.ReadLine();
+                    foreach (Tovar tovar1 in tovar)
+                    {
+                        if (tovar1.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                        {
+                            Console.WriteLine("Ваш товар:");
+                            tovar1.PrintInfo();
+                        }else
+                        {
+                            Console.WriteLine("товар не найден!");
+                        }
+                    }
+                    break;
+                case 2:
+                    Console.WriteLine("Выберите категорию");
+                    Console.WriteLine("1. Электроника");
+                    Console.WriteLine("2. Еда");
+                    Console.WriteLine("3. Концелярия");
+                    int b = Convert.ToInt32(Console.ReadLine());
+                    Kategorii category;
+                    switch (b)
+                    {
+                        case 1:
+                            category = Kategorii.Электроника;
+                            break;
+                        case 2:
+                            category = Kategorii.Еда;
+                            break;
+                        case 3:
+                            category = Kategorii.Концелярия;
+                            break;
+                        default:
+                            Console.WriteLine("Неверная категория.");
+                            return;
+                    }
+
+                    bool found = false;
+
+                    foreach (Tovar tovar1 in tovar)
+                    {
+                        if (tovar1.Kat == category)
+                        {
+                            Console.WriteLine("Ваш товар:");
+                            tovar1.PrintInfo();
+
+                            found = true;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        Console.WriteLine("Товар не найден!");
+                    }
+
+                    break;
+                    
+                    case 3:
+                    Console.WriteLine("Введите Id товара для поиска:");
+                    int id = Convert.ToInt32(Console.ReadLine());
+                    foreach (Tovar tovar1 in tovar)
+                    {
+                        if (tovar1.ID.Equals(id))
+                        {
+                            Console.WriteLine("Ваш товар:");
+                            tovar1.PrintInfo();
+                        }
+                        else
+                        {
+                            Console.WriteLine("товар не найден!");
+                        }
+                    }
+                    break;
+                default:
+                    Console.WriteLine("Неверный выбор.");
+                    break;
+            }
+        }
 
     }
 
@@ -140,6 +292,7 @@ namespace _3ISiP_424_Kotenkov
             Console.WriteLine("3. Заказать поставку товара");
             Console.WriteLine("4. Продать товар");
             Console.WriteLine("5. Поиск товара");
+            Console.WriteLine("0. Выход");
             int a = Convert.ToInt32(Console.ReadLine());
                 switch (a)
                 {
@@ -147,12 +300,16 @@ namespace _3ISiP_424_Kotenkov
                         spisok.dobav();
                         break;
                     case 2:
+                        spisok.ydal();
                         break;
                     case 3:
+                        spisok.post();
                         break;
                     case 4:
+                        spisok.prod();
                         break;
                     case 5:
+                        spisok.poisk();
                         break;
                     case 0:
                         return;
