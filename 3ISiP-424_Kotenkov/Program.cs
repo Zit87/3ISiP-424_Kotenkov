@@ -2,191 +2,167 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace _3ISiP_424_Kotenkov
 {
-    internal class Program
+    public enum Kategorii
     {
+        Электроника,
+        Еда,
+        Концелярия
+    }
 
-         static void statistica(ref Dictionary<string, double> oper)
+
+
+    class Tovar
+    {
+        public static int ID = 0;
+        public string Name { get; set; }
+
+        public double Price { get; set; }
+
+        public int Kolvo {  get; set; }
+
+        public string Nasklade { get; set; }
+
+        public string Kategor {  get; set; }
+
+        public Kategorii Kat;
+
+
+        public Tovar(string Name, double Price, int Kolvo, Kategorii Kat )
         {
-            double summa = oper.Values.Sum();
-            double srednee = oper.Values.Average();
-            double maksimum = oper.Values.Max();
-            double minimum = oper.Values.Min();
-
-            Console.WriteLine($"Сумма: {summa}");
-            Console.WriteLine($"Среднее: {srednee}");
-            Console.WriteLine($"Максимум: {maksimum}");
-            Console.WriteLine($"Минимум: {minimum}");
-
-           
-        }
-
-        static void vivod(ref Dictionary<string, double> oper)
-        {
-            foreach (var d in oper)
+            ID++;
+            this.Name = Name;
+            this.Price = Price;
+            this.Kolvo = Kolvo;
+            if(Kolvo >= 1 )
             {
-                Console.WriteLine($"(Название услуги или товара : {d.Key} Количество денег: {d.Value})");
+                Nasklade = "Есть";
             }
-        }
-
-        static void sort(ref Dictionary<string, double> oper)
-        {
-            var sort = oper.ToList();
-
-            for (int i = 0; i < sort.Count - 1; i++)
+            else
             {
-                for (int j = 0; j < sort.Count - i - 1; j++)
-                {
-                    if (sort[j].Value > sort[j + 1].Value)
-                    {
-                        var temp = sort[j];
-                        sort[j] = sort[j + 1];
-                        sort[j + 1] = temp;
-                    }
-                }
-            }
-            Console.WriteLine("Сортировкапо цене:");
-            foreach (var d in sort)
-            {
-                Console.WriteLine($"(Название услуги или товара : {d.Key} Количество денег: {d.Value})");
+                Nasklade = "Нету";
             }
 
-        }
-        static void konvert(ref Dictionary<string, double> oper)
-        {
-            Console.WriteLine("Выберите валлюту:");
-            Console.WriteLine("1. Доллары");
-            Console.WriteLine("2. Евро");
-            Console.WriteLine("3. Ввести свой курс");
-            int valuta = Convert.ToInt32(Console.ReadLine());
-            double kurs = 0;
-            switch (valuta)
+            if (Kategorii.Концелярия ==Kat)
             {
-                case 1:
-                    kurs = 80;
-                    break;
-                case 2:
-                    kurs = 95;
-                    break;
-                case 3:
-                    Console.WriteLine("Введите курс рубля к валюте:");
-                    kurs = Convert.ToDouble(Console.ReadLine());
-                    break;
-
-                default:
-                    Console.WriteLine("Неверный выбор валюты");
-                    break;
-
-
+                Kategor = "Концелярия";
+            }else if (Kategorii.Электроника == Kat){
+                Kategor = "Электроника";
             }
-            if (kurs > 0)
-            {
-                Console.WriteLine("Конвертированные значения:");
-                foreach (var d in oper)
-                {
-                    double konvert = d.Value / kurs;
-                    Console.WriteLine($"(Название услуги или товара : {d.Key} Количество денег: {konvert})");
-                }
+            else if (Kategorii.Еда ==Kat){
+                Kategor = "Еда";
             }
-
 
         }
 
-        static void poisk(ref Dictionary<string, double> oper)
+        public void PrintInfo()
         {
-            Console.WriteLine("Введите название услуги или товара для поиска:");
-            string poisk = Console.ReadLine();
-            bool naydeno = false;
-
-            foreach (var d in oper)
-            {
-                if (d.Key.ToLower().Contains(poisk.ToLower()))
-                {
-                    Console.WriteLine($"(Название услуги или товара : {d.Key} Количество денег: {d.Value})");
-                    naydeno = true;
-                }
-            }
-            if (!naydeno)
-            {
-                Console.WriteLine("Услуга или товар не найден");
-            }
+            Console.WriteLine($"ID товара {ID} название {Name} цена {Price} кол-во {Kolvo} наличие на складе {Nasklade} категория {Kategor}");
         }
-        static void operac()
+
+
+    }
+
+    class Spisok
+    {
+        public Kategorii Kat;
+        List<Tovar> tovar = new List<Tovar>();
+        public void dobav()
         {
-            Dictionary<string, double> oper = new Dictionary<string, double>();
             
-                Console.WriteLine("Введите кол-во операций( от 2 до 40):");
-                int a = Convert.ToInt32(Console.ReadLine());
-            if (a < 2 || a > 40)
+            Console.WriteLine("Введите название товара");
+            string name = Console.ReadLine();
+            Console.WriteLine("Введите цену(за шт)");
+            double price = Convert.ToDouble(Console.ReadLine());
+            if (price < 0)
             {
-                Console.WriteLine("Количество операций должно быть от 2 до 40!");
+                Console.WriteLine("Введите положительноое значение!!!");
                 return;
             }
-
-            for (int i = 0; i < a; i++)
-                {
-                    Console.WriteLine("Введите в формате (Название услуги или товара; Количество денег)");
-                    string d = Console.ReadLine();
-                    string[] chisla = d.Split(new char[] { ';' });
-                    double   b = Convert.ToDouble(chisla[1]);
-                    string c = Convert.ToString(chisla[0]);
-                    oper.Add(c, b);
-
-                }
-            while (true)
+            Console.WriteLine("Введите Количество товаров");
+            int kolvo = Convert.ToInt32(Console.ReadLine());
+            if (kolvo < 0)
             {
-                Console.WriteLine("1. Вывод данных");
-                Console.WriteLine("2. Статистика (среднее, максимальное, минимальное, сумма)");
-                Console.WriteLine("3. Сортировка по цене (пузырьковая сортировка)");
-                Console.WriteLine("4. Конвертация валюты (пользователь вводит курс или выбирает из списка)");
-                Console.WriteLine("5. Поиск по названию ");
-                Console.WriteLine("0. Выход");
-                int g = Convert.ToInt32(Console.ReadLine());
-                switch (g)
-                {
-                    case 1:
-                        vivod(ref oper);
-                        break;
-                    case 2:
-                        statistica(ref oper);
+                Console.WriteLine("Введите положительноое значение!!!");
+                return;
+            }
+            Console.WriteLine("Выберите категорию");
+            Console.WriteLine("1. Электроника");
+            Console.WriteLine("2. Еда");
+            Console.WriteLine("3. Концелярия");
+            int b = Convert.ToInt32(Console.ReadLine());
 
-                        break;
-                    case 3:
-                       sort(ref  oper);
-
-                        break;
-                    case 4:
-                        konvert(ref oper);
-                        break;
-                    case 5:
-                        poisk(ref oper);
-                        break;
-                    case 0:
-                        Console.WriteLine("Выход из программы");
-                        return;
-                    default:
-                        Console.WriteLine("Неверный выбор операции");
-                        break;
-                }
-
-
+            switch (b)
+            {
+                case 1:
+                    Kat = Kategorii.Электроника;
+                    break;
+                case 2:
+                    Kat = Kategorii.Еда;
+                    break;
+                case 3:
+                    Kat = Kategorii.Концелярия;
+                    break;
 
             }
+            tovar.Add(new Tovar(name, price, kolvo, Kat));
 
+            foreach (Tovar tovar1 in tovar)
+            {
+                tovar1.PrintInfo();
+            }
 
         }
 
+        
 
+    }
+
+
+
+
+    internal class Program
+    {
+        
+      
         static void Main(string[] args)
         {
-            operac();
+            Spisok spisok = new Spisok();
+            while (true) {
+            Console.WriteLine("Выберите действие:");
+            Console.WriteLine("1. Добавить товар");
+            Console.WriteLine("2. Удалить товар");
+            Console.WriteLine("3. Заказать поставку товара");
+            Console.WriteLine("4. Продать товар");
+            Console.WriteLine("5. Поиск товара");
+            int a = Convert.ToInt32(Console.ReadLine());
+                switch (a)
+                {
+                    case 1:
+                        spisok.dobav();
+                        break;
+                    case 2:
+                        break;
+                    case 3:
+                        break;
+                    case 4:
+                        break;
+                    case 5:
+                        break;
+                    case 0:
+                        return;
+                    default:
+                        Console.WriteLine("Такого выбора нет!!!");
+                        break;
 
 
-
+                }
+            }
         }
     }
 }
