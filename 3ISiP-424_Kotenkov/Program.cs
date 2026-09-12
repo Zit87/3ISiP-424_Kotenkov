@@ -27,11 +27,25 @@ namespace _3ISiP_424_Kotenkov
 
         public int Kolvo {  get; set; }
 
-        public string Nasklade { get; set; }
+        public string Nasklade
+        {
+            get
+            {
+                if (Kolvo >= 1)
+                {
+                    return "Есть";
+                }
+                else
+                {
+                    return "Нету";
+                }
+            }
+        }
 
         public string Kategor {  get; set; }
 
         public Kategorii Kat;
+
 
 
         public Tovar(string Name, double Price, int Kolvo, Kategorii Kat )
@@ -41,14 +55,7 @@ namespace _3ISiP_424_Kotenkov
             this.Price = Price;
             this.Kolvo = Kolvo;
             this.Kat = Kat;
-            if (Kolvo >= 1 )
-            {
-                Nasklade = "Есть";
-            }
-            else
-            {
-                Nasklade = "Нету";
-            }
+            
 
             if (Kategorii.Концелярия ==Kat)
             {
@@ -59,8 +66,10 @@ namespace _3ISiP_424_Kotenkov
             else if (Kategorii.Еда ==Kat){
                 Kategor = "Еда";
             }
-
+            
         }
+
+
 
         public void PrintInfo()
         {
@@ -73,21 +82,45 @@ namespace _3ISiP_424_Kotenkov
     class Spisok
     {
         public Kategorii Kat;
-        List<Tovar> tovar = new List<Tovar>();
+        List<Tovar> tovar = new List<Tovar>(); 
+       
+       public Spisok()
+        {
+           
+            tovar.Add(new Tovar("пельмени", 100, 10, Kategorii.Еда));
+            tovar.Add(new Tovar("ручка", 50, 30, Kategorii.Концелярия));
+            tovar.Add(new Tovar("карандаш", 30, 123, Kategorii.Концелярия));
+            tovar.Add(new Tovar("ноут", 100000, 5, Kategorii.Электроника));
+            tovar.Add(new Tovar("мышка", 1500, 67, Kategorii.Электроника));
+        }
+
         public void dobav()
         {
             
             Console.WriteLine("Введите название товара");
             string name = Console.ReadLine();
+            if (string.IsNullOrEmpty(name))
+            {
+                Console.WriteLine("Без названия нельзя!!!");
+                return;
+            }
             Console.WriteLine("Введите цену(за шт)");
-            double price = Convert.ToDouble(Console.ReadLine());
-            if (price < 0)
+            if (!double.TryParse(Console.ReadLine(), out double price))
+            {
+                Console.WriteLine("Ошибка! Введите число.");
+                return;
+            }
+            if (price < 0 )
             {
                 Console.WriteLine("Введите положительноое значение!!!");
                 return;
             }
             Console.WriteLine("Введите Количество товаров");
-            int kolvo = Convert.ToInt32(Console.ReadLine());
+            if (!int.TryParse(Console.ReadLine(), out int kolvo))
+            {
+                Console.WriteLine("Ошибка! Введите число.");
+                return;
+            }
             if (kolvo < 0)
             {
                 Console.WriteLine("Введите положительноое значение!!!");
@@ -97,7 +130,11 @@ namespace _3ISiP_424_Kotenkov
             Console.WriteLine("1. Электроника");
             Console.WriteLine("2. Еда");
             Console.WriteLine("3. Концелярия");
-            int b = Convert.ToInt32(Console.ReadLine());
+            if(!int.TryParse(Console.ReadLine(), out int b))
+            {
+                Console.WriteLine("Ошибка! Введите число.");
+                return;
+            }
 
             
             switch (b)
@@ -111,7 +148,9 @@ namespace _3ISiP_424_Kotenkov
                 case 3:
                     Kat = Kategorii.Концелярия;
                     break;
-
+                default:
+                    Console.WriteLine("Неверная категория!");
+                    return;
             }
             tovar.Add(new Tovar(name, price, kolvo, Kat));
 
@@ -130,7 +169,16 @@ namespace _3ISiP_424_Kotenkov
             {
                 tovar1.PrintInfo();
             }
-            int n = Convert.ToInt32(Console.ReadLine());
+            if (!int.TryParse(Console.ReadLine(), out int n))
+            {
+                Console.WriteLine("Ошибка! Введите число.");
+                return;
+            }
+            if(n < 1 || n > tovar.Count)
+            {
+                Console.WriteLine("Ошибка! Введите корректное число.");
+                return;
+            }
             tovar.RemoveAt(n - 1);
             Console.WriteLine("Удалено!");
             foreach (Tovar tovar1 in tovar)
@@ -146,9 +194,28 @@ namespace _3ISiP_424_Kotenkov
             {
                 tovar1.PrintInfo();
             }
-            int n = Convert.ToInt32(Console.ReadLine());
+            if (!int.TryParse(Console.ReadLine(), out int n))
+            {
+                Console.WriteLine("Ошибка! Введите число.");
+                return;
+            }
+            if(n < 1 || n > tovar.Count)
+            {
+                Console.WriteLine("Ошибка! Введите корректное число.");
+                return;
+            }
             Console.WriteLine("Введите сколько поставить:");
-            int m = Convert.ToInt32(Console.ReadLine());
+            if (!int.TryParse(Console.ReadLine(), out int m))
+            {
+                Console.WriteLine("Ошибка! Введите число.");
+                return;
+            }
+
+            if(m<= 0)
+            {
+                Console.WriteLine("Ошибка! Введите положительное число.");
+                return;
+            }
             tovar[n - 1].Kolvo += m;
 
             foreach (Tovar tovar1 in tovar)
@@ -164,9 +231,27 @@ namespace _3ISiP_424_Kotenkov
             {
                 tovar1.PrintInfo();
             }
-            int n = Convert.ToInt32(Console.ReadLine());
+            if (!int.TryParse(Console.ReadLine(), out int n))
+            {
+                Console.WriteLine("Ошибка! Введите число.");
+                return;
+            }
+            if(n < 1 || n > tovar.Count)
+            {
+                Console.WriteLine("Ошибка! Введите корректное число.");
+                return;
+            }
             Console.WriteLine("Введите сколько продать:");
-            int m = Convert.ToInt32(Console.ReadLine());
+            if (!int.TryParse(Console.ReadLine(), out int m))
+            {
+                Console.WriteLine("Ошибка! Введите число.");
+                return;
+            }
+            if(m <= 0)
+            {
+                Console.WriteLine("Ошибка! Введите положительное число.");
+                return;
+            }
             if (tovar[n - 1].Kolvo >= m)
             {
                 Console.WriteLine("Товар продан");
@@ -184,36 +269,58 @@ namespace _3ISiP_424_Kotenkov
             }
         }
 
+        public void vivod()
+        {
+            foreach (Tovar tovar1 in tovar)
+            {
+                tovar1.PrintInfo();
+            }
+        }
+
         public void poisk()
         {
             Console.WriteLine("Выберите по чему искать:");
             Console.WriteLine("1. По названию");
             Console.WriteLine("2. По категории");
             Console.WriteLine("3. По Id");
-            int choice = Convert.ToInt32(Console.ReadLine());
+            if (!int.TryParse(Console.ReadLine(), out int choice))
+            {
+                Console.WriteLine("Ошибка! Введите число.");
+                return;
+            }
             switch (choice)
             {
                 case 1:
                     Console.WriteLine("Введите название товара для поиска:");
                     string name = Console.ReadLine();
+                    bool found1 = false;
+
                     foreach (Tovar tovar1 in tovar)
                     {
                         if (tovar1.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
                         {
                             Console.WriteLine("Ваш товар:");
                             tovar1.PrintInfo();
-                        }else
-                        {
-                            Console.WriteLine("товар не найден!");
+                            found1 = true;
                         }
                     }
+
+                    if (!found1)
+                    {
+                        Console.WriteLine("Товар не найден!");
+                    }
+            
                     break;
                 case 2:
                     Console.WriteLine("Выберите категорию");
                     Console.WriteLine("1. Электроника");
                     Console.WriteLine("2. Еда");
                     Console.WriteLine("3. Концелярия");
-                    int b = Convert.ToInt32(Console.ReadLine());
+                    if (!int.TryParse(Console.ReadLine(), out int b))
+                    {
+                        Console.WriteLine("Ошибка! Введите число.");
+                        return;
+                    }
                     Kategorii category;
                     switch (b)
                     {
@@ -250,22 +357,34 @@ namespace _3ISiP_424_Kotenkov
                     }
 
                     break;
-                    
-                    case 3:
+
+                case 3:
                     Console.WriteLine("Введите Id товара для поиска:");
-                    int id = Convert.ToInt32(Console.ReadLine());
+
+                    if (!int.TryParse(Console.ReadLine(), out int id))
+                    {
+                        Console.WriteLine("Ошибка! Введите число.");
+                        return;
+                    }
+
+                    bool foundId = false;
+
                     foreach (Tovar tovar1 in tovar)
                     {
-                        if (tovar1.ID.Equals(id))
+                        if (tovar1.ID == id)
                         {
                             Console.WriteLine("Ваш товар:");
                             tovar1.PrintInfo();
-                        }
-                        else
-                        {
-                            Console.WriteLine("товар не найден!");
+                            foundId = true;
+                            break;
                         }
                     }
+
+                    if (!foundId)
+                    {
+                        Console.WriteLine("Товар не найден!");
+                    }
+
                     break;
                 default:
                     Console.WriteLine("Неверный выбор.");
@@ -284,21 +403,30 @@ namespace _3ISiP_424_Kotenkov
       
         static void Main(string[] args)
         {
+            
             Spisok spisok = new Spisok();
-            while (true) {
+
+            while(true) {
+            
             Console.WriteLine("Выберите действие:");
             Console.WriteLine("1. Добавить товар");
             Console.WriteLine("2. Удалить товар");
             Console.WriteLine("3. Заказать поставку товара");
             Console.WriteLine("4. Продать товар");
             Console.WriteLine("5. Поиск товара");
+            Console.WriteLine("6. Вывод");
             Console.WriteLine("0. Выход");
-            int a = Convert.ToInt32(Console.ReadLine());
-                switch (a)
-                {
-                    case 1:
-                        spisok.dobav();
-                        break;
+            
+            if (!int.TryParse(Console.ReadLine(), out int a))
+            {
+                Console.WriteLine("Ошибка! Введите число.");
+                    continue;
+            }
+            switch (a)
+            {
+                case 1:
+                    spisok.dobav();
+                    break;
                     case 2:
                         spisok.ydal();
                         break;
@@ -310,6 +438,9 @@ namespace _3ISiP_424_Kotenkov
                         break;
                     case 5:
                         spisok.poisk();
+                        break;
+                    case 6:
+                        spisok.vivod();
                         break;
                     case 0:
                         return;
