@@ -1,205 +1,377 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-class TextStats {
-    public string Text; 
-    public int Kolvoslov; 
-    public string SamoeKor;
-    public string SamoeDln; 
-    public int KolvoPred; 
-    public int GlBukvi; 
-    public int SoglBukvi; 
-    public Dictionary<char, int> Chastota;
-}
-class Program
+using System.Xml.Linq;
+enum Genr
 {
-    static List<TextStats> history = new List<TextStats>();
-    static string GlNis = "аеёиоуыэюя";
-    static void Main()
+    Fiction,
+    Science,
+    History,
+    Fantasy,
+    Detective
+}
+
+class Book
+{
+    private static int nextID = 0;
+    public int ID;
+    public string Title;
+    public string Author;
+    public Genr Genr;
+    public int Year;
+    public decimal Price;
+
+    public string genr;
+    public Book(string Title, string Author, decimal Price, int Year, Genr Genr)
     {
-        while (true)
+        ID = ++nextID;
+        this.Title = Title;
+        this.Author = Author;
+        this.Price = Price;
+        this.Year = Year;
+        this.Genr = Genr;
+
+
+        if (Genr.Fiction == Genr)
         {
-            Console.WriteLine("Введите текст (не менее 100 символов):");
-            string text = Console.ReadLine();
+            genr = "Художественная";
+        }
+        else if (Genr.Science == Genr)
+        {
+            genr = "Наука";
+        }
+        else if (Genr.History == Genr)
+        {
+            genr = "История";
+        }
+        else if (Genr.Fantasy == Genr)
+        {
+            genr = "Фантастика";
+        }
+        else if (Genr.Detective == Genr)
+        {
+            genr = "Детектив";
+        } 
+    }
+        public void PrintInfo()
+    {
+        Console.WriteLine($"ID книги {ID} название {Title} автор {Author} цена {Price} год изданиия {Year} жанр {genr} ");
+    }
+}
 
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                Console.WriteLine("Текст не может быть пустым.");
-                continue;
-            }
+class Spisok
+{
+    public Genr Genr;
+    List<Book> book = new List<Book>();
 
-            if (text.Length < 100)
-            {
-                Console.WriteLine("Текст слишком короткий. Пожалуйста, введите текст длиной не менее 100 символов.");
-                continue;
-            }
+    public Spisok()
+    {
 
-            TextStats stats = AnalyzeText(text);
-            history.Add(stats);
+        book.Add(new Book("Киев","Зеля",67 ,2026 , Genr.Fantasy));
+        book.Add(new Book("Конь", "Емеля", 52 , 1999, Genr.Fiction));
+        book.Add(new Book("Преступление и Наказание", "Достоевский", 300.2323m, 1865, Genr.Fantasy));
+        book.Add(new Book("Приключения Шерлока Холмса", "Конан Дойл", 3443.5656m, 1888, Genr.Detective));
+        book.Add(new Book("Это Спарта! Законы легендарного государства", "Плутарх", 899, 1000, Genr.History));
+    }
 
-            PrintStats(stats);
+    public void dobav()
+    {
 
-           
-            Console.WriteLine("Продолжить работу с новым текстом? (1 - да / 2 - нет)");
+        Console.WriteLine("Введите название книги");
+        string title = Console.ReadLine();
+        if (string.IsNullOrEmpty(title))
+        {
+            Console.WriteLine("Без названия нельзя!!!");
+            return;
+        }
+        Console.WriteLine("Введите автора книги");
+        string author = Console.ReadLine();
+        if (string.IsNullOrEmpty(author))
+        {
+            Console.WriteLine("Без автора нельзя!!!");
+            return;
+        }
+        Console.WriteLine("Введите цену");
+        if (!decimal.TryParse(Console.ReadLine(), out decimal price))
+        {
+            Console.WriteLine("Ошибка! Введите число.");
+            return;
+        }
+        if (price < 0)
+        {
+            Console.WriteLine("Введите положительноое значение!!!");
+            return;
+        }
+        Console.WriteLine("Введите год издания");
+        if (!int.TryParse(Console.ReadLine(), out int god))
+        {
+            Console.WriteLine("Ошибка! Введите число.");
+            return;
+        }
+        if (god < 0)
+        {
+            Console.WriteLine("Введите положительноое значение!!!");
+            return;
+        }
+        Console.WriteLine("Выберите жанр");
+        Console.WriteLine("1. Художественная");
+        Console.WriteLine("2. Наука");
+        Console.WriteLine("3. История");
+        Console.WriteLine("4. Фантастика");
+        Console.WriteLine("5. Детектив");
+        if (!int.TryParse(Console.ReadLine(), out int b))
+        {
+            Console.WriteLine("Ошибка! Введите число.");
+            return;
+        }
 
-            if (!int.TryParse(Console.ReadLine(), out int choice))
-            {
-                Console.WriteLine("Некорректный ввод. Завершение программы.");
+
+        switch (b)
+        {
+            case 1:
+                Genr = Genr.Fiction;
                 break;
-            }
+            case 2:
+                Genr = Genr.Science;
+                break;
+            case 3:
+                Genr = Genr.History;
+                break;
+            case 4:
+                Genr = Genr.Fantasy;
+                break;
+            case 5:
+                Genr = Genr.Detective;
+                break;
+            default:
+                Console.WriteLine("Неверная категория!");
+                return;
+        }
+        book.Add(new Book(title,author, price, god, Genr));
 
-            switch (choice)
-            {
-                case 1:
-                    continue;
-
-                case 2:
-                    Console.WriteLine("Показать статистику по прошлым текстам? (1 - да / 2 - нет)");
-
-                    if (int.TryParse(Console.ReadLine(), out int historyChoice))
-                    {
-                        if (historyChoice == 1)
-                        {
-                            ShowHistory();
-                        }
-                        else if (historyChoice != 2)
-                        {
-                            Console.WriteLine("Некорректный выбор.");
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine("Некорректный ввод.");
-                    }
-
-                    return;
-
-                default:
-                    Console.WriteLine("Некорректный ввод. Завершение программы.");
-                    return;
-            }
+        foreach (Book book1 in book)
+        {
+            book1.PrintInfo();
         }
 
     }
 
 
-
-    static TextStats AnalyzeText(string text)
+    public void ydal()
     {
-        TextStats stats = new TextStats();
-        stats.Text = text;
-
-       
-        MatchCollection matches = Regex.Matches(text, @"[а-яА-ЯёЁa-zA-Z]+");
-        List<string> words = new List<string>();
-        foreach (Match m in matches)
-            words.Add(m.Value);
-
-        stats.Kolvoslov = words.Count;
-
-        if (words.Count > 0)
+        Console.WriteLine("Введите какой товар хотите удалить:");
+        foreach (Book book1 in book)
         {
-            string shortest = words[0];
-            string longest = words[0];
-
-            for (int i = 1; i < words.Count; i++)
-            {
-                if (words[i].Length < shortest.Length)
-                    shortest = words[i];
-                if (words[i].Length > longest.Length)
-                    longest = words[i];
-            }
-
-            stats.SamoeKor = shortest;
-            stats.SamoeDln = longest;
+            book1.PrintInfo();
         }
-        else
+        if (!int.TryParse(Console.ReadLine(), out int n))
         {
-            stats.SamoeKor = "";
-            stats.SamoeDln = "";
+            Console.WriteLine("Ошибка! Введите число.");
+            return;
         }
+        if (n < 1 || n > book.Count)
+        {
+            Console.WriteLine("Ошибка! Введите корректное число.");
+            return;
+        }
+        book.RemoveAt(n - 1);
+        Console.WriteLine("Удалено!");
+        foreach (Book book1 in book)
+        {
+            book1.PrintInfo();
+        }
+    }
 
-      
-        stats.KolvoPred = Regex.Matches(text, @"[.!?]+").Count;
+    
 
    
-        int GL = 0;
-        int Sogl = 0;
-        Dictionary<char, int> skebob = new Dictionary<char, int>();
 
-        string lowerText = text.ToLower();
-        for (int i = 0; i < lowerText.Length; i++)
+    public void vivod()
+    {
+        foreach (Book book1 in book)
         {
-            char c = lowerText[i];
-            if (char.IsLetter(c))
-            {
-                if (GlNis.IndexOf(c) >= 0)
-                    GL++;
-                else
-                    Sogl++;
-
-                if (skebob.ContainsKey(c))
-                    skebob[c]++;
-                else
-                    skebob[c] = 1;
-            }
+            book1.PrintInfo();
         }
-
-        stats.GlBukvi = GL;
-        stats.SoglBukvi = Sogl;
-        stats.Chastota = skebob;
-
-        return stats;
     }
 
-    static void PrintStats(TextStats s)
+    public void poisk()
     {
-        Console.WriteLine("--- Статистика текста ---");
-        Console.WriteLine("Количество слов: " + s.Kolvoslov);
-        Console.WriteLine("Самое короткое слово: " + s.SamoeKor);
-        Console.WriteLine("Самое длинное слово: " + s.SamoeDln);
-        Console.WriteLine("Количество предложений: " + s.KolvoPred);
-        Console.WriteLine("Гласных букв: " + s.GlBukvi);
-        Console.WriteLine("Согласных букв: " + s.SoglBukvi);
-        Console.WriteLine("Частота букв:");
-
-        List<char> letters = new List<char>();
-
-        foreach (char letter in s.Chastota.Keys)
+        Console.WriteLine("Выберите по чему искать:");
+        Console.WriteLine("1. По названию");
+        Console.WriteLine("2. По жанру");
+        Console.WriteLine("3. По автору");
+        if (!int.TryParse(Console.ReadLine(), out int choice))
         {
-            letters.Add(letter);
+            Console.WriteLine("Ошибка! Введите число.");
+            return;
         }
-
-        for (int i = 0; i < letters.Count - 1; i++)
+        switch (choice)
         {
-            for (int j = 0; j < letters.Count - i - 1; j++)
-            {
-                if (s.Chastota[letters[j]] < s.Chastota[letters[j + 1]])
+            case 1:
+                Console.WriteLine("Введите название книги для поиска:");
+                string title = Console.ReadLine();
+                bool found1 = false;
+
+                foreach (Book book1 in book)
                 {
-                    char temp = letters[j];
-                    letters[j] = letters[j + 1];
-                    letters[j + 1] = temp;
+                    if (book1.Title.Equals(title, StringComparison.OrdinalIgnoreCase))
+                    {
+                        Console.WriteLine("Ваша книга:");
+                        book1.PrintInfo();
+                        found1 = true;
+                    }
                 }
+
+                if (!found1)
+                {
+                    Console.WriteLine("Товар не найден!");
+                }
+
+                break;
+            case 2:
+                Console.WriteLine("Выберите жанр");
+                Console.WriteLine("1. Художественная");
+                Console.WriteLine("2. Наука");
+                Console.WriteLine("3. История");
+                Console.WriteLine("4. Фантастика");
+                Console.WriteLine("5. Детектив");
+                if (!int.TryParse(Console.ReadLine(), out int b))
+                {
+                    Console.WriteLine("Ошибка! Введите число.");
+                    return;
+                }
+                Genr genr;
+                switch (b)
+                {
+                    case 1:
+                        genr = Genr.Fiction;
+                        break;
+                    case 2:
+                        genr = Genr.Science;
+                        break;
+                    case 3:
+                        genr = Genr.History;
+                        break;
+                    case 4:
+                        genr = Genr.Fantasy;
+                        break;
+                    case 5:
+                        genr = Genr.Detective;
+                        break;
+                    default:
+                        Console.WriteLine("Неверная категория.");
+                        return;
+                }
+
+                bool found = false;
+
+                foreach (Book book1 in book)
+                {
+                    if (book1.Genr == genr)
+                    {
+                        Console.WriteLine("Ваш товар:");
+                        book1.PrintInfo();
+
+                        found = true;
+                    }
+                }
+
+                if (!found)
+                {
+                    Console.WriteLine("Товар не найден!");
+                }
+
+                break;
+
+            case 3:
+                Console.WriteLine("Введите автора книги для поиска:");
+                string title1 = Console.ReadLine();
+                bool found2 = false;
+
+                foreach (Book book1 in book)
+                {
+                    if (book1.Title.Equals(title1, StringComparison.OrdinalIgnoreCase))
+                    {
+                        Console.WriteLine("Ваша книга:");
+                        book1.PrintInfo();
+                        found2 = true;
+                    }
+                }
+
+                if (!found2)
+                {
+                    Console.WriteLine("Товар не найден!");
+                }
+
+                
+
+                break;
+            default:
+                Console.WriteLine("Неверный выбор.");
+                break;
+        }
+    }
+
+}
+
+class Program
+{
+
+    static void Main()
+    {
+        Spisok spisok = new Spisok();
+
+        while (true)
+        {
+
+            Console.WriteLine("Выберите действие:");
+            Console.WriteLine("1. Добавить книгу");
+            Console.WriteLine("2. Удалить книгу");
+            Console.WriteLine("3. Отсортировать книги");
+            Console.WriteLine("4. Сгруппировать книги");
+            Console.WriteLine("5. Поиск книги");
+            Console.WriteLine("6. Вывод");
+            Console.WriteLine("0. Выход");
+
+            if (!int.TryParse(Console.ReadLine(), out int a))
+            {
+                Console.WriteLine("Ошибка! Введите число.");
+                continue;
+            }
+            switch (a)
+            {
+                case 1:
+                    spisok.dobav();
+                    break;
+                case 2:
+                    spisok.ydal();
+                    break;
+                case 3:
+                    
+                    break;
+                case 4:
+                    
+                    break;
+                case 5:
+                    spisok.poisk();
+                    break;
+                case 6:
+                    spisok.vivod();
+                    break;
+                case 0:
+                    return;
+                default:
+                    Console.WriteLine("Такого выбора нет!!!");
+                    break;
+
             }
         }
-
-        foreach (char letter in letters)
-        {
-            Console.WriteLine("  '" + letter + "': " + s.Chastota[letter]);
-        }
     }
 
-    static void ShowHistory()
-    {
-        Console.WriteLine("=== История всех текстов ===");
-       
-        for (int i = 0; i < history.Count; i++)
-        {
-            Console.WriteLine("Текст №" + (i + 1) + ":");
-        
-            Console.WriteLine(history[i].Text);
-            PrintStats(history[i]);
-        }
-    }
+
+    
+
+    
 }
