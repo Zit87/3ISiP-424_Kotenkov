@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
@@ -53,15 +54,19 @@ class Book
         else if (Genr.Detective == Genr)
         {
             genr = "Детектив";
-        } 
+        }
+        
     }
         public void PrintInfo()
     {
         Console.WriteLine($"ID книги {ID} название {Title} автор {Author} цена {Price} год изданиия {Year} жанр {genr} ");
     }
+    
+
+
 }
 
-class Spisok
+class Spisok 
 {
     public Genr Genr;
     List<Book> book = new List<Book>();
@@ -76,6 +81,64 @@ class Spisok
         book.Add(new Book("Это Спарта! Законы легендарного государства", "Плутарх", 899, 1000, Genr.History));
     }
 
+    public void group()
+    {
+        var groupedBooks = book.GroupBy(b => b.Author);
+        foreach (var group in groupedBooks)
+        {
+            Console.WriteLine($"Автор: {group.Key}");
+            foreach (var book1 in group)
+            {
+                book1.PrintInfo();
+            }
+            Console.WriteLine();
+        }
+    }
+    public void sort()
+    {
+        Console.WriteLine("Введите по чему сортировать");
+        Console.WriteLine("1. По названию");
+        Console.WriteLine("2. По году");
+        if (!int.TryParse(Console.ReadLine(), out int choice))
+        {
+            Console.WriteLine("Ошибка! Введите число.");
+            return;
+        }
+
+        switch (choice)
+        {
+            case 1:
+                var titles = book.OrderByDescending(b => b.Title).ToList();
+                foreach (var n in titles)
+                {
+                    n.PrintInfo();
+                }
+                break;
+            case 2:
+                var years = book.OrderByDescending(b => b.Year).ToList();
+                foreach (var n in years)
+                {
+                    n.PrintInfo();
+                }
+                break;
+            default:
+                Console.WriteLine("Неверная категория!");
+                return;
+        }
+    }
+
+    public void babki()
+    {
+        Console.WriteLine("Самая дорогая");
+        var a = book.OrderByDescending(b => b.Price).First();
+        a.PrintInfo();
+
+        Console.WriteLine("Самая дешевая");
+        var c = book.OrderBy(b => b.Price).First();
+        c.PrintInfo();
+
+
+    }
     public void dobav()
     {
 
@@ -331,8 +394,9 @@ class Program
             Console.WriteLine("2. Удалить книгу");
             Console.WriteLine("3. Отсортировать книги");
             Console.WriteLine("4. Сгруппировать книги");
-            Console.WriteLine("5. Поиск книги");
-            Console.WriteLine("6. Вывод");
+            Console.WriteLine("5. Вывести самую дорогую и самую дешёвую книгу");
+            Console.WriteLine("6. Поиск книги");
+            Console.WriteLine("7. Вывод");
             Console.WriteLine("0. Выход");
 
             if (!int.TryParse(Console.ReadLine(), out int a))
@@ -349,15 +413,18 @@ class Program
                     spisok.ydal();
                     break;
                 case 3:
-                    
+                    spisok.sort();
                     break;
                 case 4:
-                    
+                    spisok.group(); 
                     break;
                 case 5:
-                    spisok.poisk();
+                    spisok.babki();
                     break;
                 case 6:
+                    spisok.poisk();
+                    break;
+                case 7:
                     spisok.vivod();
                     break;
                 case 0:
