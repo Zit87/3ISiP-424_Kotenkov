@@ -82,9 +82,7 @@ namespace _3ISiP_424_Kotenkov
 
                 foreach (var p in products)
                 {
-                    Console.WriteLine(
-                        $"ID: {p.Id} | {p.Name} | " +
-                        $"{p.Price:F2} руб. | Остаток: {p.StockQuantity}");
+                    Console.WriteLine($"ID: {p.Id} | {p.Name} | " + $"{p.Price:F2} руб. | Остаток: {p.StockQuantity}");
                 }
             }
         }
@@ -180,8 +178,7 @@ namespace _3ISiP_424_Kotenkov
             {
                 Console.Clear();
 
-                Console.WriteLine(
-                    $"===== GMWOG | {currentUser.Username} =====");
+                Console.WriteLine($"===== GMWOG | {currentUser.Username} =====");
 
                 Console.WriteLine("1. Каталог товаров");
                 Console.WriteLine("2. Добавить товар в корзину");
@@ -309,7 +306,7 @@ namespace _3ISiP_424_Kotenkov
                     .Include(c => c.Product)
                     .ToListAsync();
 
-                Console.WriteLine("\n===== КОРЗИНА =====");
+                Console.WriteLine("===== КОРЗИНА =====");
 
                 if (items.Count == 0)
                 {
@@ -324,9 +321,7 @@ namespace _3ISiP_424_Kotenkov
                     decimal sum = item.Product.Price * item.Quantity;
                     total += sum;
 
-                    Console.WriteLine(
-                        $"{item.Product.Name} x {item.Quantity} = " +
-                        $"{sum:F2} руб.");
+                    Console.WriteLine($"{item.Product.Name} x {item.Quantity} = " + $"{sum:F2} руб.");
                 }
 
                 Console.WriteLine($"Итого: {total:F2} руб.");
@@ -416,10 +411,7 @@ namespace _3ISiP_424_Kotenkov
         }
 
   
-        static async Task CreateOrderAsync(
-            MarketplaceDatabaseEntities db,
-            List<OrderProduct> items,
-            bool clearCart)
+        static async Task CreateOrderAsync(MarketplaceDatabaseEntities db,List<OrderProduct> items,bool clearCart)
         {
             var points = await db.PickupPoint
                 .Where(p => p.IsActive)
@@ -518,8 +510,7 @@ namespace _3ISiP_424_Kotenkov
 
                     transaction.Commit();
 
-                    Console.WriteLine(
-                        $"Заказ №{order.Id} успешно оформлен!");
+                    Console.WriteLine($"Заказ №{order.Id} успешно оформлен!");
 
                     Console.WriteLine($"Сумма: {total:F2} руб.");
                 }
@@ -527,8 +518,7 @@ namespace _3ISiP_424_Kotenkov
                 {
                     transaction.Rollback();
 
-                    Console.WriteLine(
-                        "Ошибка при оформлении заказа: " + ex.Message);
+                    Console.WriteLine("Ошибка при оформлении заказа: " + ex.Message);
                 }
             }
         }
@@ -552,7 +542,7 @@ namespace _3ISiP_424_Kotenkov
                     : await query.OrderByDescending(o => o.CreatedAt)
                         .ToListAsync();
 
-                Console.WriteLine("\n===== ИСТОРИЯ ЗАКАЗОВ =====");
+                Console.WriteLine("===== ИСТОРИЯ ЗАКАЗОВ =====");
 
                 if (orders.Count == 0)
                 {
@@ -562,9 +552,7 @@ namespace _3ISiP_424_Kotenkov
 
                 foreach (var order in orders)
                 {
-                    Console.WriteLine(
-                        $"\nЗаказ №{order.Id} | " +
-                        $"{order.CreatedAt:dd.MM.yyyy HH:mm}");
+                    Console.WriteLine($"Заказ №{order.Id} | " + $"{order.CreatedAt:dd.MM.yyyy HH:mm}");
 
                     Console.WriteLine(
                         $"ПВЗ: {order.PickupPoint.Name}");
@@ -602,8 +590,7 @@ namespace _3ISiP_424_Kotenkov
             {
                 byte[] hash = derive.GetBytes(32);
 
-                return Convert.ToBase64String(salt) + ":" +
-                       Convert.ToBase64String(hash);
+                return Convert.ToBase64String(salt) + ":" + Convert.ToBase64String(hash);
             }
         }
 
@@ -661,7 +648,7 @@ namespace _3ISiP_424_Kotenkov
 
         static void Pause()
         {
-            Console.WriteLine("\nНажмите Enter для продолжения...");
+            Console.WriteLine("Нажмите Enter для продолжения...");
             Console.ReadLine();
         }
     }
