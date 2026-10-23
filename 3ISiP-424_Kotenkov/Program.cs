@@ -1,549 +1,668 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Threading.Tasks;
+using System.Data.Entity;
 
-namespace RogueGame
+namespace _3ISiP_424_Kotenkov
 {
-    public static class Rng
+    internal class Program
     {
-        private static readonly Random Random = new Random();
+        static User currentUser;
 
-        public static int Next(int minInclusive, int maxInclusive)
+        static void Main()
         {
-            return Random.Next(minInclusive, maxInclusive + 1);
+            MainAsync().GetAwaiter().GetResult();
         }
 
-        public static double NextDouble()
+        static async Task MainAsync()
         {
-            return Random.NextDouble();
-        }
-
-        public static bool Chance(double probability)
-        {
-            return Random.NextDouble() < probability;
-        }
-
-        public static T Pick<T>(IReadOnlyList<T> items)
-        {
-            return items[Random.Next(items.Count)];
-        }
-    }
-
-    public abstract class Item
-    {
-        public string Name { get; }
-
-        protected Item(string name)
-        {
-            Name = name;
-        }
-
-        public abstract string Describe();
-    }
-
-    public class Weapon : Item
-    {
-        public int Attack { get; }
-
-        public Weapon(string name, int attack) : base(name)
-        {
-            Attack = attack;
-        }
-
-        public override string Describe()
-        {
-            return $"{Name} (атака: {Attack})";
-        }
-    }
-
-    public class Armor : Item
-    {
-        public int Defense { get; }
-
-        public Armor(string name, int defense) : base(name)
-        {
-            Defense = defense;
-        }
-
-        public override string Describe()
-        {
-            return $"{Name} (защита: {Defense})";
-        }
-    }
-
-    public static class ItemFactory
-    {
-        private static readonly string[] WeaponNames =
-            { "Ржавый меч", "Стальной клинок", "Боевой топор", "Кинжал", "Копьё", "Булава", "Рапира" };
-
-        private static readonly string[] ArmorNames =
-            { "Кожаная броня", "Кольчуга", "Латы", "Стёганка", "Бронзовый нагрудник", "Мифриловая кираса" };
-
-        public static Weapon RandomWeapon()
-        {
-            return new Weapon(Rng.Pick(WeaponNames), Rng.Next(4, 18));
-        }
-
-        public static Armor RandomArmor()
-        {
-            return new Armor(Rng.Pick(ArmorNames), Rng.Next(1, 10));
-        }
-    }
-
-    public class Player
-    {
-        public const double DodgeChance = 0.4;
-        public const double MinBlock = 0.7;
-        public const double MaxBlock = 1.0;
-
-        public int MaxHp { get; }
-        public int Hp { get; private set; }
-        public Weapon Weapon { get; private set; }
-        public Armor Armor { get; private set; }
-        public bool Frozen { get; set; }
-        public bool IsAlive => Hp > 0;
-
-        public Player(int maxHp, Weapon weapon, Armor armor)
-        {
-            MaxHp = maxHp;
-            Hp = maxHp;
-            Weapon = weapon;
-            Armor = armor;
-        }
-
-        public void HealFully()
-        {
-            Hp = MaxHp;
-        }
-
-        public void EquipWeapon(Weapon weapon)
-        {
-            Weapon = weapon;
-        }
-
-        public void EquipArmor(Armor armor)
-        {
-            Armor = armor;
-        }
-
-        public int AttackPower => Weapon.Attack;
-
-        public AttackOutcome ReceiveAttack(int rawDamage, bool ignoreArmor, bool defending)
-        {
-            if (defending && Rng.Chance(DodgeChance))
+            while (true)
             {
-                return new AttackOutcome(0, true, 0);
-            }
+                Console.Clear();
+                Console.WriteLine("===== GMWOG =====");
+                Console.WriteLine("1. Посмотреть товары");
+                Console.WriteLine("2. Регистрация");
+                Console.WriteLine("3. Войти в аккаунт");
+                Console.WriteLine("0. Выход");
+                Console.Write("Выберите действие: ");
 
-            int blocked = 0;
-            if (defending && !ignoreArmor)
-            {
-                double factor = MinBlock + Rng.NextDouble() * (MaxBlock - MinBlock);
-                blocked = (int)Math.Round(Armor.Defense * factor);
-            }
+                string choice = Console.ReadLine();
 
-            int damage = Math.Max(1, rawDamage - blocked);
-            Hp = Math.Max(0, Hp - damage);
-            return new AttackOutcome(damage, false, blocked);
-        }
-    }
-
-    public readonly struct AttackOutcome
-    {
-        public int Damage { get; }
-        public bool Dodged { get; }
-        public int Blocked { get; }
-
-        public AttackOutcome(int damage, bool dodged, int blocked)
-        {
-            Damage = damage;
-            Dodged = dodged;
-            Blocked = blocked;
-        }
-    }
-
-    public abstract class Enemy
-    {
-        public string Name { get; }
-        public int MaxHp { get; }
-        public int Hp { get; private set; }
-        public int Attack { get; }
-        public int Defense { get; }
-        public bool IsAlive => Hp > 0;
-
-        protected Enemy(string name, int hp, int attack, int defense)
-        {
-            Name = name;
-            MaxHp = hp;
-            Hp = hp;
-            Attack = attack;
-            Defense = defense;
-        }
-
-        protected static int Scale(int baseValue, double multiplier)
-        {
-            return Math.Max(1, (int)Math.Round(baseValue * multiplier));
-        }
-
-        public int TakeDamage(int playerAttack)
-        {
-            int damage = Math.Max(1, playerAttack - Defense);
-            Hp = Math.Max(0, Hp - damage);
-            return damage;
-        }
-
-        public abstract string Act(Player player, bool defending);
-
-        public virtual string Describe()
-        {
-            return $"{Name} [HP: {Hp}/{MaxHp}, атака: {Attack}, защита: {Defense}]";
-        }
-
-        protected string Report(AttackOutcome outcome, string prefix)
-        {
-            if (outcome.Dodged)
-            {
-                return $"{prefix}Вы уклонились от атаки {Name}!";
-            }
-
-            string blockText = outcome.Blocked > 0 ? $" (блок поглотил {outcome.Blocked})" : "";
-            return $"{prefix}{Name} наносит вам {outcome.Damage} урона{blockText}.";
-        }
-    }
-
-    public class Goblin : Enemy
-    {
-        public const int BaseHp = 30;
-        public const int BaseAttack = 8;
-        public const int BaseDefense = 3;
-        public const double BaseCritChance = 0.2;
-        public const double CritMultiplier = 2.0;
-
-        public double CritChance { get; }
-
-        public Goblin() : this("Гоблин", 1.0, 1.0, 1.0, 0.0)
-        {
-        }
-
-        protected Goblin(string name, double hpMul, double atkMul, double defMul, double critBonus)
-            : base(name, Scale(BaseHp, hpMul), Scale(BaseAttack, atkMul), Scale(BaseDefense, defMul))
-        {
-            CritChance = BaseCritChance + critBonus;
-        }
-
-        public override string Act(Player player, bool defending)
-        {
-            bool crit = Rng.Chance(CritChance);
-            int damage = crit ? (int)Math.Round(Attack * CritMultiplier) : Attack;
-            AttackOutcome outcome = player.ReceiveAttack(damage, false, defending);
-            return Report(outcome, crit ? "КРИТИЧЕСКИЙ УДАР! " : "");
-        }
-    }
-
-    public class Skeleton : Enemy
-    {
-        public const int BaseHp = 25;
-        public const int BaseAttack = 9;
-        public const int BaseDefense = 2;
-
-        public double FreezeChance { get; }
-
-        public Skeleton() : this("Скелет", 1.0, 1.0, 1.0, 0.0)
-        {
-        }
-
-        protected Skeleton(string name, double hpMul, double atkMul, double defMul, double freezeChance)
-            : base(name, Scale(BaseHp, hpMul), Scale(BaseAttack, atkMul), Scale(BaseDefense, defMul))
-        {
-            FreezeChance = freezeChance;
-        }
-
-        public override string Act(Player player, bool defending)
-        {
-            AttackOutcome outcome = player.ReceiveAttack(Attack, true, defending);
-            string result = Report(outcome, "Удар игнорирует броню! ");
-            if (FreezeChance > 0 && Rng.Chance(FreezeChance))
-            {
-                player.Frozen = true;
-                result += " Вы заморожены и пропустите следующий ход!";
-            }
-            return result;
-        }
-    }
-
-    public class Mage : Enemy
-    {
-        public const int BaseHp = 20;
-        public const int BaseAttack = 7;
-        public const int BaseDefense = 1;
-        public const double BaseFreezeChance = 0.25;
-
-        public double FreezeChance { get; }
-
-        public Mage() : this("Маг", 1.0, 1.0, 1.0, 0.0)
-        {
-        }
-
-        protected Mage(string name, double hpMul, double atkMul, double defMul, double freezeBonus)
-            : base(name, Scale(BaseHp, hpMul), Scale(BaseAttack, atkMul), Scale(BaseDefense, defMul))
-        {
-            FreezeChance = BaseFreezeChance + freezeBonus;
-        }
-
-        public override string Act(Player player, bool defending)
-        {
-            AttackOutcome outcome = player.ReceiveAttack(Attack, false, defending);
-            string result = Report(outcome, "");
-            if (Rng.Chance(FreezeChance))
-            {
-                player.Frozen = true;
-                result += " Вы заморожены и пропустите следующий ход!";
-            }
-            return result;
-        }
-    }
-
-    public class VVG : Goblin
-    {
-        public VVG() : base("БОСС ВВГ", 2.0, 1.5, 1.2, 0.10)
-        {
-        }
-    }
-
-    public class Kovalsky : Skeleton
-    {
-        public Kovalsky() : base("БОСС Ковальский", 2.5, 1.3, 1.4, 0.0)
-        {
-        }
-    }
-
-    public class ArchMageCpp : Mage
-    {
-        public ArchMageCpp() : base("БОСС Архимаг C++", 1.8, 1.6, 1.1, 0.10)
-        {
-        }
-    }
-
-    public class Pestov : Skeleton
-    {
-        public Pestov() : base("БОСС Пестов С--", 1.3, 1.8, 0.6, Mage.BaseFreezeChance + 0.15)
-        {
-        }
-    }
-
-    public static class EnemyFactory
-    {
-        private static readonly List<Func<Enemy>> Regular = new List<Func<Enemy>>
-        {
-            () => new Goblin(),
-            () => new Skeleton(),
-            () => new Mage()
-        };
-
-        private static readonly List<Func<Enemy>> Bosses = new List<Func<Enemy>>
-        {
-            () => new VVG(),
-            () => new Kovalsky(),
-            () => new ArchMageCpp(),
-            () => new Pestov()
-        };
-
-        public static Enemy CreateRegular()
-        {
-            return Rng.Pick(Regular)();
-        }
-
-        public static Enemy CreateBoss()
-        {
-            return Rng.Pick(Bosses)();
-        }
-    }
-
-    public enum PlayerAction
-    {
-        Attack,
-        Defend
-    }
-
-    public class Game
-    {
-        private const int BossInterval = 10;
-
-        private readonly Player _player;
-        private int _turn;
-
-        public Game()
-        {
-            _player = new Player(100, new Weapon("Деревянный меч", 7), new Armor("Тряпичная одежда", 2));
-        }
-
-        public void Run()
-        {
-            Console.WriteLine("=== ТЕКСТОВЫЙ РОГАЛИК ===");
-            Console.WriteLine("Нажмите Enter для следующего хода или введите q для выхода.");
-
-            while (_player.IsAlive)
-            {
-                Console.WriteLine();
-                Console.Write("> ");
-                string input = Console.ReadLine();
-                if (input == null || input.Trim().ToLower() == "q")
+                switch (choice)
                 {
-                    Console.WriteLine("Вы покинули подземелье.");
+                    case "1":
+                        await ShowProductsAsync();
+                        Pause();
+                        break;
+
+                    case "2":
+                        await RegisterAsync();
+                        Pause();
+                        break;
+
+                    case "3":
+                        await LoginAsync();
+
+                        if (currentUser != null)
+                            await UserMenuAsync();
+
+                        break;
+
+                    case "0":
+                        return;
+
+                    default:
+                        Console.WriteLine("Неверный пункт меню.");
+                        Pause();
+                        break;
+                }
+            }
+        }
+
+       
+        static async Task ShowProductsAsync()
+        {
+            using (var db = new MarketplaceDatabaseEntities())
+            {
+                var products = await db.Product
+                    .Where(p => p.IsAvailable && p.StockQuantity > 0)
+                    .OrderBy(p => p.Name)
+                    .ToListAsync();
+
+                Console.WriteLine("\n===== КАТАЛОГ ТОВАРОВ =====");
+
+                if (products.Count == 0)
+                {
+                    Console.WriteLine("Товаров нет.");
                     return;
                 }
 
-                _turn++;
-                Console.WriteLine($"\n----- Ход {_turn} -----");
-                PrintPlayerStatus();
-
-                if (_turn % BossInterval == 0)
+                foreach (var p in products)
                 {
-                    Console.WriteLine("Земля дрожит... Появляется БОСС!");
-                    Fight(EnemyFactory.CreateBoss());
-                }
-                else if (Rng.Chance(0.5))
-                {
-                    Console.WriteLine("Вы встретили врага!");
-                    Fight(EnemyFactory.CreateRegular());
-                }
-                else
-                {
-                    Console.WriteLine("Вы нашли сундук!");
-                    OpenChest();
+                    Console.WriteLine(
+                        $"ID: {p.Id} | {p.Name} | " +
+                        $"{p.Price:F2} руб. | Остаток: {p.StockQuantity}");
                 }
             }
-
-            Console.WriteLine($"\nВы погибли на ходу {_turn}. Игра окончена.");
         }
 
-        private void PrintPlayerStatus()
+      
+        static async Task RegisterAsync()
         {
-            Console.WriteLine($"Вы: HP {_player.Hp}/{_player.MaxHp} | Оружие: {_player.Weapon.Describe()} | Броня: {_player.Armor.Describe()}");
-        }
-
-        private void Fight(Enemy enemy)
-        {
-            Console.WriteLine($"Противник: {enemy.Describe()}");
-
-            while (_player.IsAlive && enemy.IsAlive)
+            using (var db = new MarketplaceDatabaseEntities())
             {
-                bool defending = false;
+                Console.Write("Придумайте логин: ");
+                string username = Console.ReadLine();
 
-                if (_player.Frozen)
+                if (string.IsNullOrWhiteSpace(username))
                 {
-                    Console.WriteLine("Вы заморожены и пропускаете ход!");
-                    _player.Frozen = false;
+                    Console.WriteLine("Логин не может быть пустым.");
+                    return;
+                }
+
+                username = username.Trim();
+
+                bool exists = await db.User
+                    .AnyAsync(u => u.Username == username);
+
+                if (exists)
+                {
+                    Console.WriteLine("Этот логин уже занят.");
+                    return;
+                }
+
+                Console.Write("Придумайте пароль: ");
+                string password = Console.ReadLine();
+
+                Console.Write("Повторите пароль: ");
+                string confirmPassword = Console.ReadLine();
+
+                if (string.IsNullOrEmpty(password) || password.Length < 6)
+                {
+                    Console.WriteLine("Пароль должен содержать минимум 6 символов.");
+                    return;
+                }
+
+                if (password != confirmPassword)
+                {
+                    Console.WriteLine("Пароли не совпадают.");
+                    return;
+                }
+
+                var user = new User
+                {
+                    Username = username,
+                    PasswordHash = HashPassword(password),
+                    CreatedAt = DateTime.Now
+                };
+
+                db.User.Add(user);
+                await db.SaveChangesAsync();
+
+                Console.WriteLine("Регистрация успешна!");
+            }
+        }
+
+      
+        static async Task LoginAsync()
+        {
+            using (var db = new MarketplaceDatabaseEntities())
+            {
+                Console.Write("Логин: ");
+                string username = Console.ReadLine();
+
+                Console.Write("Пароль: ");
+                string password = Console.ReadLine();
+
+                var user = await db.User
+                    .FirstOrDefaultAsync(u => u.Username == username);
+
+                if (user == null ||
+                    !VerifyPassword(password, user.PasswordHash))
+                {
+                    Console.WriteLine("Неверный логин или пароль.");
+                    Pause();
+                    return;
+                }
+
+                currentUser = user;
+                Console.WriteLine("Вы успешно вошли в аккаунт!");
+                Pause();
+            }
+        }
+
+        static async Task UserMenuAsync()
+        {
+            while (currentUser != null)
+            {
+                Console.Clear();
+
+                Console.WriteLine(
+                    $"===== GMWOG | {currentUser.Username} =====");
+
+                Console.WriteLine("1. Каталог товаров");
+                Console.WriteLine("2. Добавить товар в корзину");
+                Console.WriteLine("3. Посмотреть корзину");
+                Console.WriteLine("4. Купить один товар");
+                Console.WriteLine("5. Купить всю корзину");
+                Console.WriteLine("6. История заказов");
+                Console.WriteLine("7. Выйти из аккаунта");
+                Console.Write("Выберите действие: ");
+
+                string choice = Console.ReadLine();
+
+                switch (choice)
+                {
+                    case "1":
+                        await ShowProductsAsync();
+                        Pause();
+                        break;
+
+                    case "2":
+                        await AddToCartAsync();
+                        Pause();
+                        break;
+
+                    case "3":
+                        await ShowCartAsync();
+                        Pause();
+                        break;
+
+                    case "4":
+                        await BuyOneAsync();
+                        Pause();
+                        break;
+
+                    case "5":
+                        await BuyCartAsync();
+                        Pause();
+                        break;
+
+                    case "6":
+                        await ShowOrdersAsync();
+                        Pause();
+                        break;
+
+                    case "7":
+                        currentUser = null;
+                        break;
+
+                    default:
+                        Console.WriteLine("Неверный пункт меню.");
+                        Pause();
+                        break;
+                }
+            }
+        }
+
+     
+        static async Task AddToCartAsync()
+        {
+            await ShowProductsAsync();
+
+            int productId = ReadInt("Введите ID товара: ");
+            int quantity = ReadInt("Количество: ");
+
+            if (quantity <= 0)
+            {
+                Console.WriteLine("Количество должно быть больше нуля.");
+                return;
+            }
+
+            using (var db = new MarketplaceDatabaseEntities())
+            {
+                var product = await db.Product
+                    .FirstOrDefaultAsync(p => p.Id == productId);
+
+                if (product == null || !product.IsAvailable)
+                {
+                    Console.WriteLine("Товар не найден или недоступен.");
+                    return;
+                }
+
+                var cartItem = await db.CartItem
+                    .FirstOrDefaultAsync(c =>
+                        c.UserId == currentUser.Id &&
+                        c.ProductId == productId);
+
+                int oldQuantity = cartItem == null
+                    ? 0
+                    : cartItem.Quantity;
+
+                if (oldQuantity + quantity > product.StockQuantity)
+                {
+                    Console.WriteLine("Недостаточно товара на складе.");
+                    return;
+                }
+
+                if (cartItem == null)
+                {
+                    cartItem = new CartItem
+                    {
+                        UserId = currentUser.Id,
+                        ProductId = productId,
+                        Quantity = quantity
+                    };
+
+                    db.CartItem.Add(cartItem);
                 }
                 else
                 {
-                    PlayerAction action = AskAction();
-                    if (action == PlayerAction.Attack)
+                    cartItem.Quantity += quantity;
+                }
+
+                await db.SaveChangesAsync();
+
+                Console.WriteLine("Товар добавлен в корзину!");
+            }
+        }
+
+        static async Task ShowCartAsync()
+        {
+            using (var db = new MarketplaceDatabaseEntities())
+            {
+                var items = await db.CartItem
+                    .Where(c => c.UserId == currentUser.Id)
+                    .Include(c => c.Product)
+                    .ToListAsync();
+
+                Console.WriteLine("\n===== КОРЗИНА =====");
+
+                if (items.Count == 0)
+                {
+                    Console.WriteLine("Корзина пуста.");
+                    return;
+                }
+
+                decimal total = 0;
+
+                foreach (var item in items)
+                {
+                    decimal sum = item.Product.Price * item.Quantity;
+                    total += sum;
+
+                    Console.WriteLine(
+                        $"{item.Product.Name} x {item.Quantity} = " +
+                        $"{sum:F2} руб.");
+                }
+
+                Console.WriteLine($"Итого: {total:F2} руб.");
+            }
+        }
+
+
+        static async Task BuyOneAsync()
+        {
+            await ShowProductsAsync();
+
+            int productId = ReadInt("Введите ID товара: ");
+            int quantity = ReadInt("Количество: ");
+
+            if (quantity <= 0)
+            {
+                Console.WriteLine("Количество должно быть больше нуля.");
+                return;
+            }
+
+            using (var db = new MarketplaceDatabaseEntities())
+            {
+                var product = await db.Product
+                    .FirstOrDefaultAsync(p => p.Id == productId);
+
+                if (product == null ||
+                    !product.IsAvailable ||
+                    product.StockQuantity < quantity)
+                {
+                    Console.WriteLine("Товар недоступен или его не хватает.");
+                    return;
+                }
+
+                var items = new List<OrderProduct>
+                {
+                    new OrderProduct
                     {
-                        int damage = enemy.TakeDamage(_player.AttackPower);
-                        Console.WriteLine($"Вы наносите {enemy.Name} {damage} урона.");
-                        if (!enemy.IsAlive)
+                        ProductId = product.Id,
+                        Quantity = quantity,
+                        UnitPrice = product.Price
+                    }
+                };
+
+                await CreateOrderAsync(db, items, false);
+            }
+        }
+
+
+        static async Task BuyCartAsync()
+        {
+            using (var db = new MarketplaceDatabaseEntities())
+            {
+                var cart = await db.CartItem
+                    .Where(c => c.UserId == currentUser.Id)
+                    .ToListAsync();
+
+                if (cart.Count == 0)
+                {
+                    Console.WriteLine("Корзина пуста.");
+                    return;
+                }
+
+                var items = new List<OrderProduct>();
+
+                foreach (var cartItem in cart)
+                {
+                    var product = await db.Product
+                        .FirstOrDefaultAsync(p =>
+                            p.Id == cartItem.ProductId);
+
+                    if (product == null)
+                    {
+                        Console.WriteLine("Один из товаров не найден.");
+                        return;
+                    }
+
+                    items.Add(new OrderProduct
+                    {
+                        ProductId = product.Id,
+                        Quantity = cartItem.Quantity,
+                        UnitPrice = product.Price
+                    });
+                }
+
+                await CreateOrderAsync(db, items, true);
+            }
+        }
+
+  
+        static async Task CreateOrderAsync(
+            MarketplaceDatabaseEntities db,
+            List<OrderProduct> items,
+            bool clearCart)
+        {
+            var points = await db.PickupPoint
+                .Where(p => p.IsActive)
+                .OrderBy(p => p.Id)
+                .ToListAsync();
+
+            if (points.Count == 0)
+            {
+                Console.WriteLine("Нет доступных пунктов выдачи.");
+                return;
+            }
+
+            Console.WriteLine("\n===== ВЫБЕРИТЕ ПВЗ =====");
+
+            foreach (var point in points)
+            {
+                Console.WriteLine(
+                    $"{point.Id}. {point.Name} — {point.Address}");
+            }
+
+            int pickupPointId = ReadInt("Введите ID ПВЗ: ");
+
+            if (!points.Any(p => p.Id == pickupPointId))
+            {
+                Console.WriteLine("Неверный ID пункта выдачи.");
+                return;
+            }
+
+            using (var transaction = db.Database.BeginTransaction())
+            {
+                try
+                {
+                    decimal total = 0;
+
+                    foreach (var item in items)
+                    {
+                        var product = await db.Product
+                            .FirstOrDefaultAsync(p =>
+                                p.Id == item.ProductId);
+
+                        if (product == null ||
+                            !product.IsAvailable ||
+                            item.Quantity <= 0 ||
+                            product.StockQuantity < item.Quantity)
                         {
-                            Console.WriteLine($"{enemy.Name} повержен!");
+                            Console.WriteLine(
+                                "Недостаточно товара на складе. Заказ отменён.");
+
+                            transaction.Rollback();
                             return;
                         }
-                    }
-                    else
-                    {
-                        defending = true;
-                        Console.WriteLine("Вы принимаете защитную стойку.");
-                    }
-                }
 
-                Console.WriteLine(enemy.Act(_player, defending));
-                Console.WriteLine($"Ваше HP: {_player.Hp}/{_player.MaxHp} | HP {enemy.Name}: {enemy.Hp}/{enemy.MaxHp}");
+
+                        item.UnitPrice = product.Price;
+
+                        total += product.Price * item.Quantity;
+                    }
+
+                    var order = new Order
+                    {
+                        UserId = currentUser.Id,
+                        PickupPointId = pickupPointId,
+                        CreatedAt = DateTime.Now,
+                        TotalPrice = total
+                    };
+
+                    db.Order.Add(order);
+
+ 
+                    await db.SaveChangesAsync();
+
+                    foreach (var item in items)
+                    {
+                        item.OrderId = order.Id;
+                        db.OrderProduct.Add(item);
+
+                        var product = await db.Product
+                            .FirstAsync(p => p.Id == item.ProductId);
+
+                        product.StockQuantity -= item.Quantity;
+
+                        if (product.StockQuantity == 0)
+                            product.IsAvailable = false;
+                    }
+
+                    if (clearCart)
+                    {
+                        var cart = await db.CartItem
+                            .Where(c => c.UserId == currentUser.Id)
+                            .ToListAsync();
+
+                        db.CartItem.RemoveRange(cart);
+                    }
+
+                    await db.SaveChangesAsync();
+
+                    transaction.Commit();
+
+                    Console.WriteLine(
+                        $"Заказ №{order.Id} успешно оформлен!");
+
+                    Console.WriteLine($"Сумма: {total:F2} руб.");
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+
+                    Console.WriteLine(
+                        "Ошибка при оформлении заказа: " + ex.Message);
+                }
             }
         }
 
-        private PlayerAction AskAction()
+
+        static async Task ShowOrdersAsync()
         {
-            while (true)
+            using (var db = new MarketplaceDatabaseEntities())
             {
-                Console.Write("Выберите действие: 1 - Атака, 2 - Защита: ");
-                string input = Console.ReadLine()?.Trim();
-                if (input == "1")
+                Console.WriteLine("1. Сначала новые");
+                Console.WriteLine("2. Сначала старые");
+
+                string sort = Console.ReadLine();
+
+                var query = db.Order
+                    .Where(o => o.UserId == currentUser.Id)
+                    .Include(o => o.PickupPoint);
+
+                var orders = sort == "2"
+                    ? await query.OrderBy(o => o.CreatedAt).ToListAsync()
+                    : await query.OrderByDescending(o => o.CreatedAt)
+                        .ToListAsync();
+
+                Console.WriteLine("\n===== ИСТОРИЯ ЗАКАЗОВ =====");
+
+                if (orders.Count == 0)
                 {
-                    return PlayerAction.Attack;
+                    Console.WriteLine("Заказов пока нет.");
+                    return;
                 }
-                if (input == "2")
+
+                foreach (var order in orders)
                 {
-                    return PlayerAction.Defend;
+                    Console.WriteLine(
+                        $"\nЗаказ №{order.Id} | " +
+                        $"{order.CreatedAt:dd.MM.yyyy HH:mm}");
+
+                    Console.WriteLine(
+                        $"ПВЗ: {order.PickupPoint.Name}");
+
+                    Console.WriteLine(
+                        $"Сумма: {order.TotalPrice:F2} руб.");
+
+                    var products = await db.OrderProduct
+                        .Where(p => p.OrderId == order.Id)
+                        .Include(p => p.Product)
+                        .ToListAsync();
+
+                    foreach (var item in products)
+                    {
+                        Console.WriteLine(
+                            $"  {item.Product.Name} x {item.Quantity} " +
+                            $"по {item.UnitPrice:F2} руб.");
+                    }
                 }
-                Console.WriteLine("Некорректный ввод. Введите 1 или 2.");
             }
         }
 
-        private void OpenChest()
+
+        static string HashPassword(string password)
         {
-            switch (Rng.Next(0, 2))
+            byte[] salt = new byte[16];
+
+            using (var random = RandomNumberGenerator.Create())
             {
-                case 0:
-                    _player.HealFully();
-                    Console.WriteLine($"Внутри лечебное зелье! HP полностью восстановлено: {_player.Hp}/{_player.MaxHp}.");
-                    break;
-                case 1:
-                    Weapon weapon = ItemFactory.RandomWeapon();
-                    Console.WriteLine("Внутри оружие!");
-                    Console.WriteLine($"Новое:  {weapon.Describe()}");
-                    Console.WriteLine($"Текущее: {_player.Weapon.Describe()}");
-                    if (AskTake())
-                    {
-                        _player.EquipWeapon(weapon);
-                        Console.WriteLine("Вы взяли новое оружие.");
-                    }
-                    else
-                    {
-                        Console.WriteLine("Вы выбросили оружие.");
-                    }
-                    break;
-                default:
-                    Armor armor = ItemFactory.RandomArmor();
-                    Console.WriteLine("Внутри доспех!");
-                    Console.WriteLine($"Новый:  {armor.Describe()}");
-                    Console.WriteLine($"Текущий: {_player.Armor.Describe()}");
-                    if (AskTake())
-                    {
-                        _player.EquipArmor(armor);
-                        Console.WriteLine("Вы надели новый доспех.");
-                    }
-                    else
-                    {
-                        Console.WriteLine("Вы выбросили доспех.");
-                    }
-                    break;
+                random.GetBytes(salt);
+            }
+
+            using (var derive = new Rfc2898DeriveBytes(
+                password, salt, 100000))
+            {
+                byte[] hash = derive.GetBytes(32);
+
+                return Convert.ToBase64String(salt) + ":" +
+                       Convert.ToBase64String(hash);
             }
         }
 
-        private bool AskTake()
+
+        static bool VerifyPassword(string password, string storedHash)
         {
-            while (true)
+            try
             {
-                Console.Write("1 - Взять новый предмет, 2 - Выбросить: ");
-                string input = Console.ReadLine()?.Trim();
-                if (input == "1")
-                {
-                    return true;
-                }
-                if (input == "2")
-                {
+                string[] parts = storedHash.Split(':');
+
+                if (parts.Length != 2)
                     return false;
+
+                byte[] salt = Convert.FromBase64String(parts[0]);
+                byte[] expected = Convert.FromBase64String(parts[1]);
+                byte[] actual;
+
+                using (var derive = new Rfc2898DeriveBytes(
+                    password, salt, 100000))
+                {
+                    actual = derive.GetBytes(32);
                 }
-                Console.WriteLine("Некорректный ввод. Введите 1 или 2.");
+
+                if (actual.Length != expected.Length)
+                    return false;
+
+                int difference = 0;
+
+                for (int i = 0; i < actual.Length; i++)
+                    difference |= actual[i] ^ expected[i];
+
+                return difference == 0;
+            }
+            catch
+            {
+                return false;
             }
         }
-    }
 
-    public static class Program
-    {
-        public static void Main()
+       
+        static int ReadInt(string message)
         {
-            Console.OutputEncoding = System.Text.Encoding.UTF8;
-            new Game().Run();
+            while (true)
+            {
+                Console.Write(message);
+
+                int number;
+
+                if (int.TryParse(Console.ReadLine(), out number))
+                    return number;
+
+                Console.WriteLine("Введите целое число.");
+            }
+        }
+
+        static void Pause()
+        {
+            Console.WriteLine("\nНажмите Enter для продолжения...");
+            Console.ReadLine();
         }
     }
 }
