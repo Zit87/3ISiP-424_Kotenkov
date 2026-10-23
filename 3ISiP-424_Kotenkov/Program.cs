@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -8,6 +7,23 @@ using System.Data.Entity;
 
 namespace _3ISiP_424_Kotenkov
 {
+    public class DatabaseManager
+    {
+        private static readonly Lazy<DatabaseManager> _instance =
+            new Lazy<DatabaseManager>(() => new DatabaseManager());
+
+        public static DatabaseManager Instance => _instance.Value;
+
+        private readonly MarketplaceDatabaseEntities _context;
+
+        private DatabaseManager()
+        {
+            _context = new MarketplaceDatabaseEntities();
+        }
+
+        public MarketplaceDatabaseEntities Context => _context;
+    }
+
     internal class Program
     {
         static User currentUser;
@@ -22,7 +38,7 @@ namespace _3ISiP_424_Kotenkov
             while (true)
             {
                 Console.Clear();
-                Console.WriteLine("===== GMWOG =====");
+                Console.WriteLine("===== GMWOG||GG.MOW||WONGG =====");
                 Console.WriteLine("1. Посмотреть товары");
                 Console.WriteLine("2. Регистрация");
                 Console.WriteLine("3. Войти в аккаунт");
@@ -62,114 +78,111 @@ namespace _3ISiP_424_Kotenkov
             }
         }
 
-       
+
         static async Task ShowProductsAsync()
         {
-            using (var db = new MarketplaceDatabaseEntities())
+            var db = DatabaseManager.Instance.Context;
+
+            var products = await db.Product
+                .Where(p => p.IsAvailable && p.StockQuantity > 0)
+                .OrderBy(p => p.Name)
+                .ToListAsync();
+
+            Console.WriteLine("\n===== КАТАЛОГ ТОВАРОВ =====");
+
+            if (products.Count == 0)
             {
-                var products = await db.Product
-                    .Where(p => p.IsAvailable && p.StockQuantity > 0)
-                    .OrderBy(p => p.Name)
-                    .ToListAsync();
+                Console.WriteLine("Товаров нет.");
+                return;
+            }
 
-                Console.WriteLine("\n===== КАТАЛОГ ТОВАРОВ =====");
-
-                if (products.Count == 0)
-                {
-                    Console.WriteLine("Товаров нет.");
-                    return;
-                }
-
-                foreach (var p in products)
-                {
-                    Console.WriteLine($"ID: {p.Id} | {p.Name} | " + $"{p.Price:F2} руб. | Остаток: {p.StockQuantity}");
-                }
+            foreach (var p in products)
+            {
+                Console.WriteLine($"ID: {p.Id} | {p.Name} | " + $"{p.Price:F2} руб. | Остаток: {p.StockQuantity}");
             }
         }
 
-      
+
         static async Task RegisterAsync()
         {
-            using (var db = new MarketplaceDatabaseEntities())
+            var db = DatabaseManager.Instance.Context;
+
+            Console.Write("Придумайте логин: ");
+            string username = Console.ReadLine();
+
+            if (string.IsNullOrWhiteSpace(username))
             {
-                Console.Write("Придумайте логин: ");
-                string username = Console.ReadLine();
-
-                if (string.IsNullOrWhiteSpace(username))
-                {
-                    Console.WriteLine("Логин не может быть пустым.");
-                    return;
-                }
-
-                username = username.Trim();
-
-                bool exists = await db.User
-                    .AnyAsync(u => u.Username == username);
-
-                if (exists)
-                {
-                    Console.WriteLine("Этот логин уже занят.");
-                    return;
-                }
-
-                Console.Write("Придумайте пароль: ");
-                string password = Console.ReadLine();
-
-                Console.Write("Повторите пароль: ");
-                string confirmPassword = Console.ReadLine();
-
-                if (string.IsNullOrEmpty(password) || password.Length < 6)
-                {
-                    Console.WriteLine("Пароль должен содержать минимум 6 символов.");
-                    return;
-                }
-
-                if (password != confirmPassword)
-                {
-                    Console.WriteLine("Пароли не совпадают.");
-                    return;
-                }
-
-                var user = new User
-                {
-                    Username = username,
-                    PasswordHash = HashPassword(password),
-                    CreatedAt = DateTime.Now
-                };
-
-                db.User.Add(user);
-                await db.SaveChangesAsync();
-
-                Console.WriteLine("Регистрация успешна!");
+                Console.WriteLine("Логин не может быть пустым.");
+                return;
             }
+
+            username = username.Trim();
+
+            bool exists = await db.User
+                .AnyAsync(u => u.Username == username);
+
+            if (exists)
+            {
+                Console.WriteLine("Этот логин уже занят.");
+                return;
+            }
+
+            Console.Write("Придумайте пароль: ");
+            string password = Console.ReadLine();
+
+            Console.Write("Повторите пароль: ");
+            string confirmPassword = Console.ReadLine();
+
+            if (string.IsNullOrEmpty(password) || password.Length < 6)
+            {
+                Console.WriteLine("Пароль должен содержать минимум 6 символов.");
+                return;
+            }
+
+            if (password != confirmPassword)
+            {
+                Console.WriteLine("Пароли не совпадают.");
+                return;
+            }
+
+            var user = new User
+            {
+                Username = username,
+                PasswordHash = HashPassword(password),
+                CreatedAt = DateTime.Now
+            };
+
+            db.User.Add(user);
+            await db.SaveChangesAsync();
+
+            Console.WriteLine("Регистрация успешна!");
         }
 
-      
+
         static async Task LoginAsync()
         {
-            using (var db = new MarketplaceDatabaseEntities())
+            var db = DatabaseManager.Instance.Context;
+
+            Console.Write("Логин: ");
+            string username = Console.ReadLine();
+
+            Console.Write("Пароль: ");
+            string password = Console.ReadLine();
+
+            var user = await db.User
+                .FirstOrDefaultAsync(u => u.Username == username);
+
+            if (user == null ||
+                !VerifyPassword(password, user.PasswordHash))
             {
-                Console.Write("Логин: ");
-                string username = Console.ReadLine();
-
-                Console.Write("Пароль: ");
-                string password = Console.ReadLine();
-
-                var user = await db.User
-                    .FirstOrDefaultAsync(u => u.Username == username);
-
-                if (user == null ||
-                    !VerifyPassword(password, user.PasswordHash))
-                {
-                    Console.WriteLine("Неверный логин или пароль.");
-                    Pause();
-                    return;
-                }
-
-                currentUser = user;
-                Console.WriteLine("Вы успешно вошли в аккаунт!");
+                Console.WriteLine("Неверный логин или пароль.");
                 Pause();
+                return;
             }
+
+            currentUser = user;
+            Console.WriteLine("Вы успешно вошли в аккаунт!");
+            Pause();
         }
 
         static async Task UserMenuAsync()
@@ -235,7 +248,7 @@ namespace _3ISiP_424_Kotenkov
             }
         }
 
-     
+
         static async Task AddToCartAsync()
         {
             await ShowProductsAsync();
@@ -249,83 +262,81 @@ namespace _3ISiP_424_Kotenkov
                 return;
             }
 
-            using (var db = new MarketplaceDatabaseEntities())
+            var db = DatabaseManager.Instance.Context;
+
+            var product = await db.Product
+                .FirstOrDefaultAsync(p => p.Id == productId);
+
+            if (product == null || !product.IsAvailable)
             {
-                var product = await db.Product
-                    .FirstOrDefaultAsync(p => p.Id == productId);
-
-                if (product == null || !product.IsAvailable)
-                {
-                    Console.WriteLine("Товар не найден или недоступен.");
-                    return;
-                }
-
-                var cartItem = await db.CartItem
-                    .FirstOrDefaultAsync(c =>
-                        c.UserId == currentUser.Id &&
-                        c.ProductId == productId);
-
-                int oldQuantity = cartItem == null
-                    ? 0
-                    : cartItem.Quantity;
-
-                if (oldQuantity + quantity > product.StockQuantity)
-                {
-                    Console.WriteLine("Недостаточно товара на складе.");
-                    return;
-                }
-
-                if (cartItem == null)
-                {
-                    cartItem = new CartItem
-                    {
-                        UserId = currentUser.Id,
-                        ProductId = productId,
-                        Quantity = quantity
-                    };
-
-                    db.CartItem.Add(cartItem);
-                }
-                else
-                {
-                    cartItem.Quantity += quantity;
-                }
-
-                await db.SaveChangesAsync();
-
-                Console.WriteLine("Товар добавлен в корзину!");
+                Console.WriteLine("Товар не найден или недоступен.");
+                return;
             }
+
+            var cartItem = await db.CartItem
+                .FirstOrDefaultAsync(c =>
+                    c.UserId == currentUser.Id &&
+                    c.ProductId == productId);
+
+            int oldQuantity = cartItem == null
+                ? 0
+                : cartItem.Quantity;
+
+            if (oldQuantity + quantity > product.StockQuantity)
+            {
+                Console.WriteLine("Недостаточно товара на складе.");
+                return;
+            }
+
+            if (cartItem == null)
+            {
+                cartItem = new CartItem
+                {
+                    UserId = currentUser.Id,
+                    ProductId = productId,
+                    Quantity = quantity
+                };
+
+                db.CartItem.Add(cartItem);
+            }
+            else
+            {
+                cartItem.Quantity += quantity;
+            }
+
+            await db.SaveChangesAsync();
+
+            Console.WriteLine("Товар добавлен в корзину!");
         }
 
         static async Task ShowCartAsync()
         {
-            using (var db = new MarketplaceDatabaseEntities())
+            var db = DatabaseManager.Instance.Context;
+
+            var items = await db.CartItem
+                .Where(c => c.UserId == currentUser.Id)
+                .Include(c => c.Product)
+                .ToListAsync();
+
+            Console.WriteLine("===== КОРЗИНА =====");
+
+            if (items.Count == 0)
             {
-                var items = await db.CartItem
-                    .Where(c => c.UserId == currentUser.Id)
-                    .Include(c => c.Product)
-                    .ToListAsync();
-
-                Console.WriteLine("===== КОРЗИНА =====");
-
-                if (items.Count == 0)
-                {
-                    Console.WriteLine("Корзина пуста.");
-                    return;
-                }
-
-                decimal total = 0;
-
-                foreach (var item in items)
-                {
-                    decimal sum = item.Product.Price * item.Quantity;
-                    total += sum;
-
-                    Console.WriteLine($"{item.Product.Name} x {item.Quantity} = " + $"{sum:F2} руб.");
-                }
-
-                Console.WriteLine($"Итого: {total:F2} руб.");
+                Console.WriteLine("Корзина пуста.");
+                return;
             }
+
+            decimal total = 0;
+
+            foreach (var item in items)
+            {
+                decimal sum = item.Product.Price * item.Quantity;
+                total += sum;
+
+                Console.WriteLine($"{item.Product.Name} x {item.Quantity} = " + $"{sum:F2} руб.");
+            }
+
+            Console.WriteLine($"Итого: {total:F2} руб.");
         }
 
 
@@ -342,76 +353,74 @@ namespace _3ISiP_424_Kotenkov
                 return;
             }
 
-            using (var db = new MarketplaceDatabaseEntities())
+            var db = DatabaseManager.Instance.Context;
+
+            var product = await db.Product
+                .FirstOrDefaultAsync(p => p.Id == productId);
+
+            if (product == null ||
+                !product.IsAvailable ||
+                product.StockQuantity < quantity)
             {
-                var product = await db.Product
-                    .FirstOrDefaultAsync(p => p.Id == productId);
-
-                if (product == null ||
-                    !product.IsAvailable ||
-                    product.StockQuantity < quantity)
-                {
-                    Console.WriteLine("Товар недоступен или его не хватает.");
-                    return;
-                }
-
-                var items = new List<OrderProduct>
-                {
-                    new OrderProduct
-                    {
-                        ProductId = product.Id,
-                        Quantity = quantity,
-                        UnitPrice = product.Price
-                    }
-                };
-
-                await CreateOrderAsync(db, items, false);
+                Console.WriteLine("Товар недоступен или его не хватает.");
+                return;
             }
+
+            var items = new List<OrderProduct>
+            {
+                new OrderProduct
+                {
+                    ProductId = product.Id,
+                    Quantity = quantity,
+                    UnitPrice = product.Price
+                }
+            };
+
+            await CreateOrderAsync(db, items, false);
         }
 
 
         static async Task BuyCartAsync()
         {
-            using (var db = new MarketplaceDatabaseEntities())
-            {
-                var cart = await db.CartItem
-                    .Where(c => c.UserId == currentUser.Id)
-                    .ToListAsync();
+            var db = DatabaseManager.Instance.Context;
 
-                if (cart.Count == 0)
+            var cart = await db.CartItem
+                .Where(c => c.UserId == currentUser.Id)
+                .ToListAsync();
+
+            if (cart.Count == 0)
+            {
+                Console.WriteLine("Корзина пуста.");
+                return;
+            }
+
+            var items = new List<OrderProduct>();
+
+            foreach (var cartItem in cart)
+            {
+                var product = await db.Product
+                    .FirstOrDefaultAsync(p =>
+                        p.Id == cartItem.ProductId);
+
+                if (product == null)
                 {
-                    Console.WriteLine("Корзина пуста.");
+                    Console.WriteLine("Один из товаров не найден.");
                     return;
                 }
 
-                var items = new List<OrderProduct>();
-
-                foreach (var cartItem in cart)
+                items.Add(new OrderProduct
                 {
-                    var product = await db.Product
-                        .FirstOrDefaultAsync(p =>
-                            p.Id == cartItem.ProductId);
-
-                    if (product == null)
-                    {
-                        Console.WriteLine("Один из товаров не найден.");
-                        return;
-                    }
-
-                    items.Add(new OrderProduct
-                    {
-                        ProductId = product.Id,
-                        Quantity = cartItem.Quantity,
-                        UnitPrice = product.Price
-                    });
-                }
-
-                await CreateOrderAsync(db, items, true);
+                    ProductId = product.Id,
+                    Quantity = cartItem.Quantity,
+                    UnitPrice = product.Price
+                });
             }
+
+            await CreateOrderAsync(db, items, true);
         }
 
-  
-        static async Task CreateOrderAsync(MarketplaceDatabaseEntities db,List<OrderProduct> items,bool clearCart)
+
+        static async Task CreateOrderAsync(MarketplaceDatabaseEntities db, List<OrderProduct> items, bool clearCart)
         {
             var points = await db.PickupPoint
                 .Where(p => p.IsActive)
@@ -464,7 +473,6 @@ namespace _3ISiP_424_Kotenkov
                             return;
                         }
 
-
                         item.UnitPrice = product.Price;
 
                         total += product.Price * item.Quantity;
@@ -480,7 +488,6 @@ namespace _3ISiP_424_Kotenkov
 
                     db.Order.Add(order);
 
- 
                     await db.SaveChangesAsync();
 
                     foreach (var item in items)
@@ -526,51 +533,50 @@ namespace _3ISiP_424_Kotenkov
 
         static async Task ShowOrdersAsync()
         {
-            using (var db = new MarketplaceDatabaseEntities())
+            var db = DatabaseManager.Instance.Context;
+
+            Console.WriteLine("1. Сначала новые");
+            Console.WriteLine("2. Сначала старые");
+
+            string sort = Console.ReadLine();
+
+            var query = db.Order
+                .Where(o => o.UserId == currentUser.Id)
+                .Include(o => o.PickupPoint);
+
+            var orders = sort == "2"
+                ? await query.OrderBy(o => o.CreatedAt).ToListAsync()
+                : await query.OrderByDescending(o => o.CreatedAt)
+                    .ToListAsync();
+
+            Console.WriteLine("===== ИСТОРИЯ ЗАКАЗОВ =====");
+
+            if (orders.Count == 0)
             {
-                Console.WriteLine("1. Сначала новые");
-                Console.WriteLine("2. Сначала старые");
+                Console.WriteLine("Заказов пока нет.");
+                return;
+            }
 
-                string sort = Console.ReadLine();
+            foreach (var order in orders)
+            {
+                Console.WriteLine($"Заказ №{order.Id} | " + $"{order.CreatedAt:dd.MM.yyyy HH:mm}");
 
-                var query = db.Order
-                    .Where(o => o.UserId == currentUser.Id)
-                    .Include(o => o.PickupPoint);
+                Console.WriteLine(
+                    $"ПВЗ: {order.PickupPoint.Name}");
 
-                var orders = sort == "2"
-                    ? await query.OrderBy(o => o.CreatedAt).ToListAsync()
-                    : await query.OrderByDescending(o => o.CreatedAt)
-                        .ToListAsync();
+                Console.WriteLine(
+                    $"Сумма: {order.TotalPrice:F2} руб.");
 
-                Console.WriteLine("===== ИСТОРИЯ ЗАКАЗОВ =====");
+                var products = await db.OrderProduct
+                    .Where(p => p.OrderId == order.Id)
+                    .Include(p => p.Product)
+                    .ToListAsync();
 
-                if (orders.Count == 0)
+                foreach (var item in products)
                 {
-                    Console.WriteLine("Заказов пока нет.");
-                    return;
-                }
-
-                foreach (var order in orders)
-                {
-                    Console.WriteLine($"Заказ №{order.Id} | " + $"{order.CreatedAt:dd.MM.yyyy HH:mm}");
-
                     Console.WriteLine(
-                        $"ПВЗ: {order.PickupPoint.Name}");
-
-                    Console.WriteLine(
-                        $"Сумма: {order.TotalPrice:F2} руб.");
-
-                    var products = await db.OrderProduct
-                        .Where(p => p.OrderId == order.Id)
-                        .Include(p => p.Product)
-                        .ToListAsync();
-
-                    foreach (var item in products)
-                    {
-                        Console.WriteLine(
-                            $"  {item.Product.Name} x {item.Quantity} " +
-                            $"по {item.UnitPrice:F2} руб.");
-                    }
+                        $"  {item.Product.Name} x {item.Quantity} " +
+                        $"по {item.UnitPrice:F2} руб.");
                 }
             }
         }
@@ -630,7 +636,7 @@ namespace _3ISiP_424_Kotenkov
             }
         }
 
-       
+
         static int ReadInt(string message)
         {
             while (true)
